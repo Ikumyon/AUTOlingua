@@ -1,0 +1,312 @@
+/* style.css */
+
+/* Interフォントをbodyに適用 */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ドラッグ＆ドロップエリアのホバー時のスタイルをTailwindで制御するため、ここでは特に記述なし */
+/* Tailwind CSSのクラスでほとんどのスタイルを適用しています */
+
+/* テーブルの基本的なスタイル */
+#data-table {
+    table-layout: fixed; /* 固定テーブルレイアウトに変更して、列幅の制御を容易にする */
+    width: 100%; /* 親要素の幅いっぱいに広がるように設定 */
+    border-collapse: collapse; /* セルのボーダーを結合 */
+}
+
+#data-table th,
+#data-table td {
+    border: 1px solid #e5e7eb; /* すべてのセルにボーダーを追加 */
+    padding: 12px 16px;
+    text-align: left;
+    /*word-break: break-word; /* 長い単語でも強制的に改行 */
+}
+
+/* アクション列のボタンのスタイル */
+#data-table .translate-button {
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem; /* text-sm */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#data-table .translate-button:hover {
+    background-color: #4338ca; /* indigo-700 */
+}
+
+/* 個別の口調設定ドロップダウンのスタイル */
+#data-table .individual-tone-select {
+    display: block;
+    width: 100%; /* 親要素の幅いっぱいに広がる */
+    background-color: #ffffff;
+    border: 1px solid #d1d5db; /* gray-300 */
+    color: #374151; /* gray-700 */
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    -webkit-appearance: none; /* Safari/Chrome */
+    -moz-appearance: none;    /* Firefox */
+    appearance: none;         /* 標準 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.5em;
+    padding-right: 2.5rem; /* 矢印のスペースを確保 */
+}
+
+#data-table .individual-tone-select:focus {
+    outline: none;
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+}
+/* 1番目はありません。一番長いキーに自動調整
+/* 原文列のスタイル (2番目の列) */
+#data-table th.original_text-column-header {
+    width: 250px; /* 原文列の幅を固定 */
+}
+#data-table td.original_text-column-header {
+    word-wrap: break-word; /* 単語の途中で改行を許可 */
+}
+
+/* 翻訳セルの幅を広げる */
+#data-table th.translation-cell {
+    min-width: 450px; /* 翻訳セルの最小幅を大きく設定 */
+    width: 450px; /* 翻訳セルの幅を固定 */
+}
+#data-table td.translation-cell {
+    cursor: pointer; /* クリック可能であることを示す */
+    transition: background-color 0.2s ease; /* ホバー時のトランジション */
+    word-wrap: break-word; /* 長い単語でも強制的に改行 */
+}
+
+/* 翻訳セルにホバーしたときのスタイル */
+#data-table .translation-cell:hover {
+    background-color: #f0f9ff; /* blue-50 */
+}
+
+/* 校閲列のスタイル (4番目の列) */
+#data-table th.review-column-header {
+    width: 70px; /* 校閲チェックボックスが収まる幅 */
+}
+#data-table td.review-column-cell {
+    text-align: center; /* チェックボックスを中央寄せ */
+}
+
+/* 校閲チェックボックスのデフォルト非表示 */
+.review-checkbox {
+    display: none; /* チェックボックス自体をデフォルトで非表示にする */
+}
+
+/* JavaScriptで hidden クラスが削除されたときに表示される */
+.review-checkbox:not(.hidden) {
+    display: inline-block; /* または block, flex など適切な表示形式 */
+}
+
+
+/* 口調列のスタイル (5番目の列) */
+#data-table th.tone-column-header {
+    width: 180px; /* 口調選択ドロップダウンが収まる幅 */
+}
+#data-table td.tone-column-header {
+    min-width: 150px; /* 口調選択ドロップダウンが収まる最小幅 */
+}
+
+/* アクション列のスタイル (6番目の列) */
+#data-table th.action-column-header {
+    width: 100px; /* ボタンが収まる最小幅 */
+}
+#data-table td.action-column-header {
+    text-align: center; /* ボタンを中央寄せ */
+}
+
+
+/* 全体口調設定ドロップダウンの幅を調整 */
+#tone-select {
+    min-width: 150px; /* 最小幅を設定して文字が見切れないようにする */
+    width: auto; /* コンテンツに合わせて自動調整を試みる */
+}
+
+/* 設定モーダルのタブスタイル */
+.tab-button {
+    width: 100%; /* 親要素の幅いっぱいに広がる */
+    white-space: normal; /* テキストの改行を許可 */
+    background-color: #f3f4f6; /* gray-100 */
+    color: #4b5563; /* gray-700 */
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-align: left;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    border: none; /* デフォルトのボタンボーダーを削除 */
+}
+
+.tab-button:hover {
+    background-color: #e5e7eb; /* gray-200 */
+}
+
+.tab-button.active {
+    background-color: #3b82f6; /* blue-500 */
+    color: white;
+    font-weight: 600;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* カスタム口調リストのアイテムスタイル */
+.custom-tone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f9fafb; /* gray-50 */
+    border: 1px solid #e5e7eb; /* gray-200 */
+    border-radius: 6px;
+}
+
+.custom-tone-item .tone-name {
+    font-weight: 500;
+    color: #374151; /* gray-700 */
+}
+
+.custom-tone-item .button-group {
+    display: flex;
+    gap: 8px; /* ボタン間のスペース */
+}
+
+.custom-tone-item .edit-tone-button {
+    background-color: #10b981; /* green-500 */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem; /* text-xs */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.custom-tone-item .edit-tone-button:hover {
+    background-color: #059669; /* green-600 */
+}
+
+.custom-tone-item .delete-tone-button {
+    background-color: #ef4444; /* red-500 */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem; /* text-xs */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.custom-tone-item .delete-tone-button:hover {
+    background-color: #dc2626; /* red-600 */
+}
+
+/* 用語集テーブルのスタイル */
+#glossary-table th,
+#glossary-table td,
+#modifier-table th, /* 修飾文字テーブルにも適用 */
+#modifier-table td { /* 修飾文字テーブルにも適用 */
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb; /* gray-200 */
+    border-right: 1px solid #e5e7eb; /* gray-200 */
+    white-space: normal; /* 用語集のセルは改行を許可 */
+    word-break: break-word; /* 長い単語でも強制的に改行 */
+}
+
+#glossary-table th,
+#modifier-table th { /* 修飾文字テーブルにも適用 */
+    background-color: #f9fafb; /* gray-50 */
+    font-weight: 600;
+    color: #374151; /* gray-700 */
+    text-transform: uppercase;
+    font-size: 0.75rem; /* text-xs */
+    letter-spacing: 0.05em;
+}
+
+#glossary-table td:last-child,
+#glossary-table th:last-child,
+#modifier-table td:last-child, /* 修飾文字テーブルにも適用 */
+#modifier-table th:last-child { /* 修飾文字テーブルにも適用 */
+    border-right: none; /* 最後の列の右側ボーダーを削除 */
+}
+
+#glossary-table .glossary-button-group,
+#modifier-table .modifier-button-group { /* 修飾文字テーブルにも適用 */
+    display: flex;
+    gap: 4px; /* ボタン間のスペース */
+    justify-content: center; /* ボタンを中央寄せ */
+    flex-wrap: wrap; /* ボタンが複数行になっても対応 */
+}
+
+#glossary-table .edit-glossary-button,
+#glossary-table .delete-glossary-button,
+#modifier-table .edit-modifier-button, /* 修飾文字テーブルにも適用 */
+#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#glossary-table .edit-glossary-button,
+#modifier-table .edit-modifier-button { /* 修飾文字テーブルにも適用 */
+    background-color: #10b981; /* green-500 */
+    color: white;
+}
+
+#glossary-table .edit-glossary-button:hover,
+#modifier-table .edit-modifier-button:hover { /* 修飾文字テーブルにも適用 */
+    background-color: #059669; /* green-600 */
+}
+
+#glossary-table .delete-glossary-button,
+#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
+    background-color: #ef4444; /* red-500 */
+    color: white;
+}
+
+#glossary-table .delete-glossary-button:hover,
+#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
+    background-color: #dc2626; /* red-600 */
+}
+
+/* 用語集ファイルドロップゾーンのスタイル */
+#glossary-file-drop-zone {
+    border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50;
+}
+
+/* ファイル先頭設定ドロップダウンの矢印位置調整 */
+#file-prefix-select {
+    background-position: right 0.75rem center; /* 矢印を垂直方向中央に調整 */
+}
+
+/* 品詞ドロップダウンの矢印位置調整 */
+#glossary-pos {
+    background-position: right 0.75rem center; /* 矢印を垂直方向中央に調整 */
+}
+
+/* 用語集テーブルの他形態セルに改行を適用 */
+#glossary-table .glossary-original-alt-cell {
+    white-space: pre-wrap; /* 改行を保持して表示 */
+}
+
+/* カスタムアラートメッセージのスタイル */
+.custom-alert {
+    animation: fadeOut 0.5s ease-out 2.5s forwards; /* 2.5秒後にフェードアウト開始 */
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
