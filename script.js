@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleDecryptPassphraseButton = document.getElementById('toggle-decrypt-passphrase'); // 復号化パスフレーズ表示切り替えボタン
     const submitPassphraseButton = document.getElementById('submit-passphrase-button');
     const cancelPassphraseButton = document.getElementById('cancel-passphrase-button');
+    const deleteApiKeyFromDecryptButton = document.getElementById('delete-api-key-from-decrypt-button'); // 復号化モーダル内のAPIキー削除ボタン
 
     // グローバル変数
     let currentApiKey = ""; // 翻訳に使用するAPIキー (IndexedDBで管理)
@@ -104,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isReviewModeEnabled = false; // 校閲モードの状態
 
     // 定数
-    const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w|\\.%@\\+]*[\\w\\]\\£\\$]'; // デフォルトの修飾文字正規表現
+    const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w\\|\\.%@\\+]*[\\w\\]\\£\\$]'; // デフォルトの修飾文字正規表現
     const COLOR_CODE_PATTERN = '§\\w+§!'; // カラーコードの正規表現パターン
     const COLOR_CODE_PART_PATTERN = '§\\w'; // カラーコード部分の正規表現パターン (例: §Y)
     const CONDITIONAL_TONE_SUFFIX = '-条件付き口調'; // 条件付き口調のサフィックス
@@ -373,6 +374,7 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
      * APIキーとパスフレーズ関連データをIndexedDBから削除する関数 (新規追加)
      */
     const deleteApiKeyFromIndexedDB = async () => {
+        // window.confirm の代わりにカスタムアラートを使用
         if (!confirm('APIキーとパスフレーズ情報をIndexedDBから削除してもよろしいですか？この操作は元に戻せません。')) {
             return;
         }
@@ -383,6 +385,8 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
             currentApiKey = ''; // メモリ上のAPIキーをクリア
             apiKeyInput.value = ''; // 入力フィールドをクリア
             apiPassphraseInput.value = ''; // パスフレーズ入力フィールドをクリア
+            passphraseInputForDecrypt.value = ''; // 復号化モーダルのパスフレーズ入力フィールドをクリア
+            passphraseModal.classList.add('hidden'); // 復号化モーダルを閉じる
             alertMessage('APIキーとパスフレーズ情報を削除しました。', 'success');
             updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
         } catch (error) {
@@ -1093,7 +1097,9 @@ ${modifiedText}`;
             const apiKey = apiKeyInput.value.trim();
             const passphrase = apiPassphraseInput.value.trim();
 
-            if (apiKey) { // APIキーが入力されている場合のみ保存を試みる
+            // 新しいAPIキーが入力されており、かつ既存のAPIキーと異なる場合のみ、暗号化して保存を試みる
+            // または、APIキーがまだ設定されていない（初回設定）場合も保存を試みる
+            if (apiKey && (apiKey !== currentApiKey || !currentApiKey)) { // currentApiKeyのチェックを追加
                 const success = await saveEncryptedApiKey(apiKey, passphrase);
                 if (success) {
                     currentApiKey = apiKey; // 成功したらcurrentApiKeyを更新
@@ -1101,13 +1107,17 @@ ${modifiedText}`;
                     apiPassphraseInput.value = ''; // パスフレーズ入力フィールドをクリア
                     updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
                 } else {
-                    // 保存失敗時はAPIキーをクリアしない
-                    return; // 保存失敗時は処理を中断
+                    // 保存失敗時は処理を中断
+                    return;
                 }
-            } else {
-                // APIキーが空の場合、IndexedDBから削除するかどうかは要件による
-                // 今回は、空の場合は何もしない（既存のAPIキーはそのまま残る）
-                alertMessage('APIキーが入力されていません。既存のAPIキーは変更されません。', 'info');
+            } else if (!apiKey && currentApiKey) {
+                // APIキーが入力フィールドから削除されたが、既存のAPIキーがある場合
+                // この場合、既存のAPIキーを削除するかどうかユーザーに確認するなどのロジックを追加することも可能
+                // 今回は「変更がない」とみなして何もしない、または別途削除ボタンで削除させる運用
+                alertMessage('APIキーが変更されていないため、パスフレーズは不要です。', 'info');
+            } else if (!apiKey && !currentApiKey) {
+                // APIキーもパスフレーズも入力されていない場合（何もしない）
+                alertMessage('APIキーが入力されていません。', 'info');
             }
 
             // APIキー以外の設定をlocalStorageに保存
@@ -1126,15 +1136,27 @@ ${modifiedText}`;
      * @param {string} type - メッセージの種類 ('success', 'error', 'warning', 'info')
      */
     const alertMessage = (message, type = 'info') => {
+        let alertContainer = document.getElementById('alert-container'); // アラートコンテナを取得
+        if (!alertContainer) {
+            // alert-container がなければ作成し、body に追加
+            const newContainer = document.createElement('div');
+            newContainer.id = 'alert-container';
+            newContainer.className = 'fixed top-4 right-4 z-[9999] flex flex-col items-end space-y-2'; // Tailwind CSS クラスで配置と間隔を定義
+            document.body.appendChild(newContainer);
+            alertContainer = newContainer;
+        }
+
         const alertDiv = document.createElement('div');
         let bgColor = 'bg-blue-500';
         if (type === 'success') bgColor = 'bg-green-500';
         else if (type === 'error') bgColor = 'bg-red-500';
         else if (type === 'warning') bgColor = 'bg-yellow-500';
 
-        alertDiv.className = `custom-alert fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[9999] opacity-0 transition-opacity duration-300`;
+        alertDiv.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg opacity-0 transition-opacity duration-300`;
         alertDiv.textContent = message;
-        document.body.appendChild(alertDiv);
+
+        // 新しいアラートをコンテナの先頭に追加 (新しいものが上に来るように)
+        alertContainer.prepend(alertDiv);
 
         // フェードイン
         setTimeout(() => {
@@ -2420,6 +2442,11 @@ ${modifiedText}`;
     // APIキー削除ボタンのイベントリスナー
     if (deleteApiKeyButton) {
         deleteApiKeyButton.addEventListener('click', deleteApiKeyFromIndexedDB);
+    }
+
+    // 復号化モーダル内のAPIキー削除ボタンのイベントリスナー
+    if (deleteApiKeyFromDecryptButton) {
+        deleteApiKeyFromDecryptButton.addEventListener('click', deleteApiKeyFromIndexedDB);
     }
 
 
