@@ -1,6 +1,7 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    // DOM要素の取得
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const tableContainer = document.getElementById('table-container');
@@ -20,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // タブ関連の要素
     const tab1Button = document.getElementById('tab1-button');
-    const tab2Button = document.getElementById('tab2-button');
+    const tab2Button = document = document.getElementById('tab2-button');
     const tab3Button = document.getElementById('tab3-button'); // タブ3ボタン
     const glossaryTabButton = document.getElementById('glossary-tab-button'); // 用語集タブボタン
     const modifierTabButton = document.getElementById('modifier-tab-button'); // 新しい修飾文字タブボタン
@@ -31,8 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const glossaryTabContent = document.getElementById('glossary-tab-content'); // 用語集タブコンテンツ
     const modifierTabContent = document.getElementById('modifier-tab-content'); // 新しい修飾文字タブコンテンツ
 
-    // APIキーとデフォルト口調設定の要素（タブコンテンツ内に移動）
+    // APIキーとデフォルト口調設定の要素
     const apiKeyInput = document.getElementById('api-key-input');
+    const apiPassphraseInput = document.getElementById('api-passphrase-input'); // パスフレーズ入力フィールド
+    const toggleApiPassphraseButton = document.getElementById('toggle-api-passphrase'); // APIキー設定のパスフレーズ表示切り替えボタン
+    const deleteApiKeyButton = document.getElementById('delete-api-key-button'); // APIキー削除ボタン (新規追加)
     const defaultToneSelect = document.getElementById('default-tone-select');
 
     // 口調カスタマイズ関連の要素
@@ -60,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const glossaryFileInput = document.getElementById('glossary-file-input'); // 用語集ファイル入力
     const clearGlossaryButton = document.getElementById('clear-glossary-button'); // 用語集全削除ボタン
 
-    // 修飾文字関連の要素 (新規追加)
+    // 修飾文字関連の要素
     const modifierNameInput = document.getElementById('modifier-name-input');
     const modifierRegexInput = document.getElementById('modifier-regex-input');
     const addModifierButton = document.getElementById('add-modifier-button');
@@ -70,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // YMLダウンロード関連の要素
     const filePrefixSelect = document.getElementById('file-prefix-select'); // ファイル先頭設定ドロップダウン
     const downloadTranslatedYmlButton = document.getElementById('download-translated-yml-button'); // 翻訳済みYMLダウンロードボタン
-    const downloadLogButton = document.getElementById('download-log-button'); // ログダウンロードボタン (移動)
+    const downloadLogButton = document.getElementById('download-log-button'); // ログダウンロードボタン
 
     // 作者情報モーダル関連の要素
     const appLogo = document.getElementById('app-logo'); // ロゴ要素
@@ -80,23 +84,319 @@ document.addEventListener('DOMContentLoaded', () => {
     // 校閲モード関連の要素
     const reviewModeCheckbox = document.getElementById('review-mode-checkbox'); // 校閲モードチェックボックス
 
-    let currentApiKey = ""; // 翻訳に使用するAPIキー (localStorageで管理)
+    // パスフレーズ入力モーダル関連の要素
+    const passphraseModal = document.getElementById('passphrase-modal');
+    const passphraseInputForDecrypt = document.getElementById('passphrase-input-for-decrypt');
+    const toggleDecryptPassphraseButton = document.getElementById('toggle-decrypt-passphrase'); // 復号化パスフレーズ表示切り替えボタン
+    const submitPassphraseButton = document.getElementById('submit-passphrase-button');
+    const cancelPassphraseButton = document.getElementById('cancel-passphrase-button');
+
+    // グローバル変数
+    let currentApiKey = ""; // 翻訳に使用するAPIキー (IndexedDBで管理)
     let customTones = []; // カスタム口調を保存する配列
     let editingToneIndex = null; // 編集中の口調のインデックス (nullの場合は新規追加)
-    let translationLog = []; // 翻訳ログを保存する配列
+    let translationLog = []; // ログを保存する配列
     let glossaryTerms = []; // 用語集を保存する配列
     let editingGlossaryIndex = null; // 編集中の用語のインデックス (nullの場合は新規追加)
-    let modifierCharacters = []; // 修飾文字を保存する配列 (新規追加)
-    let editingModifierIndex = null; // 編集中の修飾文字のインデックス (新規追加)
+    let modifierCharacters = []; // 修飾文字を保存する配列
+    let editingModifierIndex = null; // 編集中の修飾文字のインデックス
     let currentFileName = ''; // 現在読み込まれているファイル名
     let isReviewModeEnabled = false; // 校閲モードの状態
 
-    // デフォルトの修飾文字正規表現
-    const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w|\\.%@\\+]*[\\w\\]\\£\\$]';
-    // 条件付き口調のサフィックス
-    const CONDITIONAL_TONE_SUFFIX = '-条件付き口調';
+    // 定数
+    const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w|\\.%@\\+]*[\\w\\]\\£\\$]'; // デフォルトの修飾文字正規表現
+    const COLOR_CODE_PATTERN = '§\\w+§!'; // カラーコードの正規表現パターン
+    const COLOR_CODE_PART_PATTERN = '§\\w'; // カラーコード部分の正規表現パターン (例: §Y)
+    const CONDITIONAL_TONE_SUFFIX = '-条件付き口調'; // 条件付き口調のサフィックス
 
-    // ランダムな文字列を生成するヘルパー関数
+
+    // IndexedDBの設定
+    const DB_NAME = 'AUTOlinguaDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'appSettings';
+    const API_KEY_ITEM_KEY = 'encryptedApiKey';
+    const PASSPHRASE_SALT_ITEM_KEY = 'passphraseSalt'; // パスフレーズ導出用ソルト
+
+    let db; // IndexedDBのインスタンス
+
+    /**
+     * IndexedDBを開く/作成する関数
+     * @returns {Promise<IDBDatabase>} IndexedDBのインスタンス
+     */
+    const openDatabase = () => {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME);
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                console.log('IndexedDB opened successfully.');
+                resolve(db);
+            };
+
+            request.onerror = (event) => {
+                console.error('IndexedDB error:', event.target.errorCode, event.target.error);
+                alertMessage('IndexedDBのオープンに失敗しました。', 'error');
+                reject(event.target.error);
+            };
+        });
+    };
+
+    /**
+     * ランダムなバイト配列を生成するヘルパー関数
+     * @param {number} length - 生成するバイト配列の長さ
+     * @returns {Uint8Array} ランダムなバイト配列
+     */
+    const generateRandomBytes = (length) => {
+        return crypto.getRandomValues(new Uint8Array(length));
+    };
+
+    /**
+     * パスフレーズから暗号化キーを導出する関数 (PBKDF2を使用)
+     * @param {string} passphrase - ユーザーが入力したパスフレーズ
+     * @param {Uint8Array} salt - パスフレーズ導出用のソルト
+     * @returns {Promise<CryptoKey>} 導出された暗号化キー
+     */
+    const deriveKeyFromPassphrase = async (passphrase, salt) => {
+        const encoder = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw",
+            encoder.encode(passphrase),
+            { name: "PBKDF2" },
+            false,
+            ["deriveKey"]
+        );
+
+        return crypto.subtle.deriveKey(
+            {
+                name: "PBKDF2",
+                salt: salt,
+                iterations: 100000, // 繰り返し回数を増やすことでブルートフォース攻撃に強くする
+                hash: "SHA-256",
+            },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 },
+            true, // エクスポート可能にする (IndexedDBに保存するため)
+            ["encrypt", "decrypt"]
+        );
+    };
+
+    /**
+     * データを暗号化する関数 (AES-GCMを使用)
+     * @param {string} data - 暗号化するデータ（文字列）
+     * @param {CryptoKey} key - 暗号化キー
+     * @returns {Promise<{iv: number[], ciphertext: number[]}>} IVと暗号化されたデータ
+     */
+    const encryptData = async (data, key) => {
+        const iv = generateRandomBytes(16); // 16バイトのIVを生成 (AES-GCM推奨)
+        const encoder = new TextEncoder();
+        const encodedData = encoder.encode(data);
+
+        const ciphertext = await crypto.subtle.encrypt(
+            {
+                name: "AES-GCM",
+                iv: iv,
+            },
+            key,
+            encodedData
+        );
+
+        // IVと暗号化されたデータを結合して返す (IndexedDBに保存するため)
+        return {
+            iv: Array.from(iv), // ArrayBufferを配列に変換
+            ciphertext: Array.from(new Uint8Array(ciphertext)) // ArrayBufferを配列に変換
+        };
+    };
+
+    /**
+     * 暗号化されたデータを復号化する関数 (AES-GCMを使用)
+     * @param {{iv: number[], ciphertext: number[]}} encryptedData - IVと暗号化されたデータ
+     * @param {CryptoKey} key - 復号化キー
+     * @returns {Promise<string>} 復号化されたデータ（文字列）
+     */
+    const decryptData = async (encryptedData, key) => {
+        const iv = new Uint8Array(encryptedData.iv);
+        const ciphertext = new Uint8Array(encryptedData.ciphertext).buffer;
+
+        const decrypted = await crypto.subtle.decrypt(
+            {
+                name: "AES-GCM",
+                iv: iv,
+            },
+            key,
+            ciphertext
+        );
+
+        const decoder = new TextDecoder();
+        return decoder.decode(decrypted);
+    };
+
+    /**
+     * APIキーを暗号化してIndexedDBに保存する関数
+     * @param {string} apiKey - 保存するAPIキー
+     * @param {string} passphrase - APIキーを暗号化するためのパスフレーズ
+     * @returns {Promise<boolean>} 保存が成功したかどうか
+     */
+const saveEncryptedApiKey = async (apiKey, passphrase) => {
+        if (!passphrase) {
+            alertMessage('APIキーを保存するにはパスフレーズを入力してください。', 'warning');
+            throw new Error('Passphrase is required to save API key.');
+        }
+
+        try {
+            // パスフレーズ導出用ソルトの取得または生成
+            let passphraseSalt = await getSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
+            if (!passphraseSalt) {
+                // ここでUint8Arrayを生成し、それを保存する
+                const newSalt = generateRandomBytes(16); // Uint8Arrayを生成
+                passphraseSalt = Array.from(newSalt); // IndexedDBに保存するためにArrayに変換
+                await saveSettingToIndexedDB(PASSPHRASE_SALT_ITEM_KEY, passphraseSalt);
+                passphraseSalt = newSalt; // deriveKeyに渡すためにUint8Arrayを保持
+            } else {
+                passphraseSalt = new Uint8Array(passphraseSalt); // ArrayをUint8Arrayに戻す
+            }
+
+            // passphraseSaltが必ずUint8Arrayであることを保証してから渡す
+            const encryptionKey = await deriveKeyFromPassphrase(passphrase, passphraseSalt); // ここでUint8Arrayが渡される
+            const encryptedApiKeyData = await encryptData(apiKey, encryptionKey);
+
+            await saveSettingToIndexedDB(API_KEY_ITEM_KEY, encryptedApiKeyData);
+            alertMessage('APIキーを暗号化して保存しました。', 'success');
+            return true;
+        } catch (error) {
+            console.error('APIキーの暗号化保存に失敗しました:', error);
+            alertMessage('APIキーの保存に失敗しました。', 'error');
+            return false;
+        }
+    };
+
+    /**
+     * IndexedDBから暗号化されたAPIキーを読み込み、復号化する関数
+     * @param {string} passphrase - APIキーを復号化するためのパスフレーズ
+     * @returns {Promise<string|null>} 復号化されたAPIキー、またはnull（読み込み失敗時）
+     */
+    const loadEncryptedApiKey = async (passphrase) => {
+        if (!passphrase) {
+            alertMessage('APIキーを読み込むにはパスフレーズを入力してください。', 'warning');
+            throw new Error('Passphrase is required to load API key.');
+        }
+
+        try {
+            const encryptedApiKeyData = await getSettingFromIndexedDB(API_KEY_ITEM_KEY);
+            const passphraseSalt = await getSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
+
+            if (!encryptedApiKeyData || !passphraseSalt) {
+                alertMessage('保存されたAPIキーまたはパスフレーズ情報がありません。', 'warning');
+                return null;
+            }
+
+            const encryptionKey = await deriveKeyFromPassphrase(passphrase, new Uint8Array(passphraseSalt));
+            const decryptedApiKey = await decryptData(encryptedApiKeyData, encryptionKey);
+
+            alertMessage('APIキーを復号化して読み込みました。', 'success');
+            return decryptedApiKey;
+        } catch (error) {
+            console.error('APIキーの復号化読み込みに失敗しました:', error);
+            alertMessage('パスフレーズが正しくないか、APIキーの復号化に失敗しました。', 'error');
+            return null;
+        }
+    };
+
+    /**
+     * IndexedDBから設定を取得する汎用関数
+     * @param {string} key - 取得する設定のキー
+     * @returns {Promise<any>} 取得した設定データ
+     */
+    const getSettingFromIndexedDB = (key) => {
+        return new Promise((resolve, reject) => {
+            if (!db) {
+                reject(new Error('IndexedDB is not open.'));
+                return;
+            }
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(key);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    };
+
+    /**
+     * IndexedDBに設定を保存する汎用関数
+     * @param {string} key - 保存する設定のキー
+     * @param {any} value - 保存する設定データ
+     * @returns {Promise<void>}
+     */
+    const saveSettingToIndexedDB = (key, value) => {
+        return new Promise((resolve, reject) => {
+            if (!db) {
+                reject(new Error('IndexedDB is not open.'));
+                return;
+            }
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(value, key);
+
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(event.target.error);
+        });
+    };
+
+    /**
+     * IndexedDBから指定されたキーのデータを削除する汎用関数
+     * @param {string} key - 削除するデータのキー
+     * @returns {Promise<void>}
+     */
+    const deleteSettingFromIndexedDB = (key) => {
+        return new Promise((resolve, reject) => {
+            if (!db) {
+                reject(new Error('IndexedDB is not open.'));
+                return;
+            }
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(key);
+
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(event.target.error);
+        });
+    };
+
+    /**
+     * APIキーとパスフレーズ関連データをIndexedDBから削除する関数 (新規追加)
+     */
+    const deleteApiKeyFromIndexedDB = async () => {
+        if (!confirm('APIキーとパスフレーズ情報をIndexedDBから削除してもよろしいですか？この操作は元に戻せません。')) {
+            return;
+        }
+
+        try {
+            await deleteSettingFromIndexedDB(API_KEY_ITEM_KEY);
+            await deleteSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
+            currentApiKey = ''; // メモリ上のAPIキーをクリア
+            apiKeyInput.value = ''; // 入力フィールドをクリア
+            apiPassphraseInput.value = ''; // パスフレーズ入力フィールドをクリア
+            alertMessage('APIキーとパスフレーズ情報を削除しました。', 'success');
+            updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+        } catch (error) {
+            console.error('APIキーとパスフレーズ情報の削除に失敗しました:', error);
+            alertMessage('APIキーとパスフレーズ情報の削除に失敗しました。', 'error');
+        }
+    };
+
+
+    /**
+     * ランダムな文字列を生成するヘルパー関数
+     * @param {number} length - 生成する文字列の長さ
+     * @returns {string} ランダムな文字列
+     */
     const generateRandomString = (length) => {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let result = '';
@@ -106,7 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return result;
     };
 
-    // エラーメッセージを表示する関数
+    /**
+     * エラーメッセージを表示する関数
+     * @param {string} message - 表示するエラーメッセージ
+     */
     const showErrorMessage = (message) => {
         errorMessage.textContent = message;
         errorMessage.classList.remove('hidden');
@@ -116,27 +419,47 @@ document.addEventListener('DOMContentLoaded', () => {
         translationProgress.classList.add('hidden'); // 進捗表示も非表示
     };
 
-    // エラーメッセージを非表示にする関数
+    /**
+     * エラーメッセージを非表示にする関数
+     */
     const hideErrorMessage = () => {
         errorMessage.classList.add('hidden');
         errorMessage.textContent = '';
     };
 
-    // --- ヘルパー関数: テキストが日本語を含むか判定 ---
+    /**
+     * テキストが日本語を含むか判定する関数
+     * @param {string} text - 判定するテキスト
+     * @returns {boolean} 日本語を含む場合はtrue、それ以外はfalse
+     */
     const isJapaneseText = (text) => {
         // ひらがな、カタカナ、一般的な漢字の範囲をチェック
         const japaneseRegex = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\u3005-\u3006\u3000-\u303F\uFF00-\uFFEF]/u;
         return japaneseRegex.test(text);
     };
 
-    // テキストを翻訳する非同期関数
-    const translateText = async (originalText, key, selectedToneValue) => { // key 引数を追加
+    /**
+     * テキストを翻訳する非同期関数
+     * @param {string} originalText - 翻訳する原文
+     * @param {string} key - 文章キー (条件付き口調の判定に使用)
+     * @param {string} selectedToneValue - 選択された口調の値
+     * @returns {Promise<object>} 翻訳結果、ステータス、エラーメッセージを含むオブジェクト
+     */
+    const translateText = async (originalText, key, selectedToneValue) => {
+        if (!currentApiKey) { // APIキーが設定されていない場合は翻訳をスキップ
+            const msg = 'APIキーが設定されていません。設定モーダルでAPIキーを入力してください。';
+            console.warn(msg);
+            alertMessage(msg, 'error');
+            return { translatedText: 'APIキー未設定', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A' };
+        }
+
         if (!originalText || originalText.trim() === '') {
             return { translatedText: '', status: 'Success', errorMessage: '', preModifiedText: '', postRestoredText: '' }; // 空のテキストは翻訳しない
         }
 
         let toneInstruction = '';
         let glossaryInstructions = ''; // 用語集からの指示を追加する変数
+        let colorcodeInstructions = ''; // カラーコードからの指示を追加する変数
 
         // 1. 原文に用語集から該当する用語を全て抜きだす。
         // 2. 抜き出した用語データをAIに渡し、原文を用語集に合った翻訳をするように指示
@@ -219,29 +542,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 修飾文字の事前処理 ---
         let modifiedText = originalText;
-        let matchResults = []; // [元の文字列, 置き換え文字] を保存する二次元配列
+        // colorcodes: [ [カラーコード以外の部分, カラーコード部分] ]
+        let colorcodes = []; // [カラーコード以外の部分, カラーコード部分]
+        const codePlaceholderPrefix = "§CODE_PLACEHOLDER_"; // 一時的なプレースホルダーのプレフィックス
+        let placeholderCounter = 0; // プレースホルダーのカウンター
+
+        // まず、ユーザー定義の汎用修飾文字を処理
+        // matchResults: [元の一般修飾文字列, 置き換えプレースホルダー]
+        const matchResults = []; // ここで初期化
 
         if (modifierCharacters.length > 0 && modifierCharacters[0].regex) {
             try {
-                // グローバルマッチを有効にするため 'g' フラグを追加
-                const modifierRegex = new RegExp(modifierCharacters[0].regex, 'g');
+                const generalModifierRegex = new RegExp(modifierCharacters[0].regex, 'g');
                 let match;
-                // text を直接操作するのではなく、modifiedText を更新
-                while ((match = modifierRegex.exec(originalText)) !== null) {
+                while ((match = generalModifierRegex.exec(modifiedText)) !== null) {
                     const originalMatch = match[0];
-                    const placeholder = generateRandomString(5); // ランダムな5文字の文字列を生成
+                    const placeholder = `${codePlaceholderPrefix}${placeholderCounter++}§`; // ユニークなプレースホルダー
                     matchResults.push([originalMatch, placeholder]);
-                    // modifiedText の中でマッチした部分を置き換える
                     modifiedText = modifiedText.split(originalMatch).join(placeholder);
                 }
-                preModifiedText = modifiedText; // 置換後のテキストをログ用に保存
             } catch (e) {
                 console.error("無効な修飾文字正規表現:", e);
                 errorMessageForLog = `無効な修飾文字正規表現: ${e.message}`;
                 translationStatus = 'Error';
                 finalTranslatedText = '翻訳エラー';
-                // ここで翻訳を中止するか、エラーとしてログに記録するかは要件による
-                // 今回は処理を続行し、正規表現が適用されないものとする
+            }
+        }
+
+        // その後、カラーコードを処理
+        if (translationStatus !== 'Error') {
+            try {
+                const colorCodeRegex = new RegExp(COLOR_CODE_PATTERN, 'g'); // グローバルフラグを追加
+                let match;
+                // modifiedTextに対してカラーコードを検索
+                while ((match = colorCodeRegex.exec(modifiedText)) !== null) {
+                    const fullMatch = match[0]; // 例: §Y§!
+                    const colorPartRegex = new RegExp(COLOR_CODE_PART_PATTERN); // 例: §Y
+                    const colorPartMatch = fullMatch.match(colorPartRegex);
+                    let colorPart = '';
+                    if (colorPartMatch && colorPartMatch.length > 0) {
+                        colorPart = colorPartMatch[0]; // 最初のマッチを使用
+                    }
+
+                    // 甲文字列から'§\\w'と'§!'を削除した文字列
+                    // fullMatchからcolorPartと'§!'を削除
+                    const textWithoutCode = fullMatch.replace(new RegExp(colorPart.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + '!$', 'g'), '').replace(new RegExp(colorPart.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '');
+
+                    // colorcodes: [ [カラーコード以外の部分, カラーコード部分] ]
+                    colorcodes.push([textWithoutCode, colorPart]);
+
+                    // modifiedTextから元の甲文字列全体を一時的なプレースホルダーで置き換える
+                    const placeholder = `${codePlaceholderPrefix}${placeholderCounter++}§`;
+                    matchResults.push([fullMatch, placeholder]); // 復元のためにmatchResultsに追加
+                    modifiedText = modifiedText.split(fullMatch).join(placeholder);
+                }
+
+                // AIへの指示を追加
+                if (colorcodes.length > 0) {
+                    colorcodeInstructions += `その際、以下にリストされている「カラーコード以外の部分」の日本語訳は、対応する「カラーコード」と「§!」で挟んでください。`;
+                    colorcodes.forEach((entry, index) => {
+                        // entry[0]はカラーコード以外の部分、entry[1]はカラーコード部分
+                        colorcodeInstructions += `\n- カラーコード以外の部分: "${entry[0]}", カラーコード: "${entry[1]}§!"`;
+                    });
+                    colorcodeInstructions += `\n例: 原文「§Y§!Hello§!」が「こんにちは」と翻訳された場合、最終的な出力は「§Y§!こんにちは§!」としてください。`;
+                }
+
+                preModifiedText = modifiedText; // 置換後のテキストをログ用に保存
+            } catch (e) {
+                console.error("無効な修飾文字正規表現 (カラーコード):", e);
+                errorMessageForLog = `無効な修飾文字正規表現 (カラーコード): ${e.message}`;
+                translationStatus = 'Error';
+                finalTranslatedText = '翻訳エラー';
             }
         }
         // --- 事前処理ここまで ---
@@ -261,12 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            if (!currentApiKey) {
-                const msg = 'APIキーが設定されていません。設定モーダルでAPIキーを入力してください。';
-                console.warn(msg);
-                throw new Error(msg);
-            }
-
             let chatHistory = [];
             // AIへの最終的なプロンプト
             // AIに送るテキストは修飾文字が置き換えられた modifiedText を使用
@@ -274,11 +639,12 @@ document.addEventListener('DOMContentLoaded', () => {
 改行文字（\\n）は原文の通りに翻訳結果にも含めてください。
 ${toneInstruction}
 ${glossaryInstructions}
+${colorcodeInstructions}
 ${modifiedText}`;
             chatHistory.push({ role: "user", parts: [{ text: prompt }] });
             const payload = { contents: chatHistory };
 
-            const apiKeyToUse = currentApiKey;
+            const apiKeyToUse = currentApiKey; // currentApiKeyを使用
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`;
 
@@ -327,15 +693,21 @@ ${modifiedText}`;
 
         // --- 修飾文字の事後処理（復元） ---
         postRestoredText = finalTranslatedText; // 復元前の翻訳結果を保存
-        matchResults.forEach(item => {
+
+        // matchResultsに格納された順序の逆順で復元する
+        // これにより、ネストされたプレースホルダーも正しく復元される
+        for (let i = matchResults.length - 1; i >= 0; i--) {
+            const item = matchResults[i];
             const originalMatch = item[0]; // 元の文字列
             const placeholder = item[1];   // 置き換え文字
-            // 翻訳後の文字列から置き換え文字を検索し、元の文字列に戻す
+
             // placeholderが正規表現の特殊文字を含む可能性があるためエスケープ
             const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const placeholderRegex = new RegExp(escapedPlaceholder, 'g');
             postRestoredText = postRestoredText.replace(placeholderRegex, originalMatch);
-        });
+        }
+
+        postRestoredText = postRestoredText.replace(/§！/g, '§!'); // 翻訳結果に対して '§！' を '§!' に置換
         finalTranslatedText = postRestoredText; // 最終的な翻訳結果を更新
         // --- 事後処理ここまで ---
 
@@ -355,8 +727,17 @@ ${modifiedText}`;
         return { translatedText: finalTranslatedText, status: translationStatus, errorMessage: errorMessageForLog, preModifiedText: preModifiedText, postRestoredText: postRestoredText };
     };
 
-    // 個別の行を翻訳する関数
+    /**
+     * 個別の行を翻訳する関数
+     * @param {HTMLElement} rowElement - 翻訳対象の行要素
+     */
     const translateRow = async (rowElement) => {
+        // APIキーが設定されていない場合は処理を中断
+        if (!currentApiKey) {
+            alertMessage('APIキーが設定されていません。設定モーダルでAPIキーを入力してください。', 'error');
+            return;
+        }
+
         const keyCell = rowElement.querySelector('td:first-child'); // キーセルを取得
         const originalTextCell = rowElement.querySelector('.original-text-cell');
         const translationCell = rowElement.querySelector('.translation-cell');
@@ -405,7 +786,10 @@ ${modifiedText}`;
         }
     };
 
-    // ファイルの内容を解析してテーブルを生成する関数
+    /**
+     * ファイルの内容を解析してテーブルを生成する関数
+     * @param {string} content - ファイルのテキスト内容
+     */
     const processFileContent = async (content) => {
         hideErrorMessage(); // 以前のエラーメッセージをクリア
 
@@ -467,6 +851,17 @@ ${modifiedText}`;
                     }
                 }
 
+                // カラーコードのみの原文を無視
+                try {
+                    const fullColorCodeRegex = new RegExp(`^${COLOR_CODE_PATTERN}$`); // sourceプロパティで正規表現のパターン文字列を取得
+                    if (fullColorCodeRegex.test(value)) {
+                        console.log(`Skipping color-code-only text: "${value}"`);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("カラーコード正規表現のテスト中にエラーが発生しました:", e);
+                }
+
 
                 html += `<tr data-key="${escapeHTML(key)}" data-is-reviewed="false">`; // data-keyとdata-is-reviewedを追加
                 html += `<td class="string_key-column-header">${escapeHTML(key)}</td>`; // キーセルにクラスを追加
@@ -478,8 +873,7 @@ ${modifiedText}`;
                 // 個別の口調設定ドロップダウンを追加
                 html += `<td>
                             <select class="individual-tone-select">
-                                <!-- オプションはJavaScriptで動的に生成されます -->
-                            </select>
+                                </select>
                         </td>`;
                 html += `<td><button class="translate-button">翻訳</button></td>`; // 個別翻訳ボタンの初期テキスト
                 html += `</tr>`;
@@ -512,16 +906,24 @@ ${modifiedText}`;
         translationLog = []; // 新しいファイルを読み込んだらログをクリア
         populateToneDropdowns(); // 新しい行が追加されたので、口調ドロップダウンを更新
         updateReviewColumnVisibility(); // ファイルロード時に校閲列の表示を更新
+        updateTranslationButtonsState(); // APIキーの状態に基づいてボタンを更新
     };
 
-    // HTMLエスケープ関数 (XSS対策)
+    /**
+     * HTMLエスケープ関数 (XSS対策)
+     * @param {string} str - エスケープする文字列
+     * @returns {string} エスケープされた文字列
+     */
     const escapeHTML = (str) => {
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
     };
 
-    // ファイルを読み込む関数
+    /**
+     * ファイルを読み込む関数
+     * @param {File} file - 読み込むファイルオブジェクト
+     */
     const readFile = (file) => {
         if (!file) {
             showErrorMessage('ファイルが選択されていません。');
@@ -548,25 +950,45 @@ ${modifiedText}`;
         reader.readAsText(file);
     };
 
-    // --- localStorage関連の関数 ---
-
-    // 設定をlocalStorageから読み込む関数
-    const loadSettings = () => {
+    /**
+     * APIキー以外の設定をlocalStorageに保存する関数
+     */
+    const saveOtherSettingsToLocalStorage = () => {
         try {
+            const settings = {
+                defaultTone: defaultToneSelect ? defaultToneSelect.value : 'da_dearu',
+                customTones: customTones,
+                glossaryTerms: glossaryTerms,
+                modifierCharacters: modifierCharacters,
+                isReviewModeEnabled: isReviewModeEnabled
+            };
+            localStorage.setItem('translationAppSettings', JSON.stringify(settings));
+            globalToneSelect.value = settings.defaultTone;
+            console.log("Other settings saved to localStorage:", settings);
+        } catch (error) {
+            console.error("Error saving other settings to localStorage:", error);
+            alertMessage("その他の設定の保存に失敗しました。", 'error');
+        }
+    };
+
+    /**
+     * 設定をIndexedDBとlocalStorageから読み込む関数
+     */
+    const loadSettings = async () => {
+        try {
+            // APIキー以外の設定をlocalStorageから読み込む
             const settingsJson = localStorage.getItem('translationAppSettings');
             if (settingsJson) {
                 const settings = JSON.parse(settingsJson);
-                currentApiKey = settings.apiKey || "";
                 customTones = settings.customTones || [];
-                glossaryTerms = settings.glossaryTerms || []; // 用語集を読み込む
-                modifierCharacters = settings.modifierCharacters || []; // 修飾文字を読み込む (新規追加)
-                isReviewModeEnabled = settings.isReviewModeEnabled || false; // 校閲モードの状態を読み込む
+                glossaryTerms = settings.glossaryTerms || [];
+                modifierCharacters = settings.modifierCharacters || [];
+                isReviewModeEnabled = settings.isReviewModeEnabled || false;
 
                 // customTonesが空の場合、デフォルトの口調を追加
                 if (customTones.length === 0) {
                     customTones.push({ value: 'da_dearu', name: 'だ・である調', instruction: '自称は「我ら」を使用し、語尾は「である」または「だ」調にしてください。', isConditional: false, conditions: [], elseInstruction: '' });
                     customTones.push({ value: 'taigen_dome', name: '体言止め', instruction: '自称は「我ら」を使用し、語尾は体言止めにしてください。', isConditional: false, conditions: [], elseInstruction: '' });
-                    // 新しい条件付き口調「イベント」を追加
                     customTones.push({
                         value: 'event_conditional_tone',
                         name: 'イベント',
@@ -577,28 +999,26 @@ ${modifiedText}`;
                         }],
                         elseInstruction: "原文に合わせて自称は「我々」、「我が」などを使い、「だ。」「である」調にしてください。"
                     });
-                    saveSettings(); // デフォルト口調を追加したら保存
+                    // IndexedDBへの保存ではなく、localStorageに保存し続ける他の設定
+                    saveOtherSettingsToLocalStorage();
                 }
 
                 // modifierCharactersが空の場合、デフォルトの修飾文字を追加
                 if (modifierCharacters.length === 0) {
                     modifierCharacters.push({ name: 'デフォルト', regex: DEFAULT_MODIFIER_REGEX });
-                    saveSettings(); // デフォルト修飾文字を追加したら保存
+                    saveOtherSettingsToLocalStorage();
                 }
 
                 // UIに反映
-                if (apiKeyInput) apiKeyInput.value = currentApiKey;
-                // defaultToneSelectが存在する場合のみ値を設定
                 if (defaultToneSelect) {
                     defaultToneSelect.value = settings.defaultTone || 'da_dearu';
                 }
                 if (reviewModeCheckbox) {
-                    reviewModeCheckbox.checked = isReviewModeEnabled; // 校閲モードチェックボックスの状態を復元
+                    reviewModeCheckbox.checked = isReviewModeEnabled;
                 }
 
-                populateToneDropdowns(); // 口調ドロップダウンを更新
+                populateToneDropdowns();
                 globalToneSelect.value = settings.defaultTone || 'da_dearu';
-                // 修飾文字入力フィールドに現在の値を設定
                 if (modifierCharacters.length > 0) {
                     modifierNameInput.value = modifierCharacters[0].name;
                     modifierRegexInput.value = modifierCharacters[0].regex;
@@ -607,19 +1027,16 @@ ${modifiedText}`;
                     modifierRegexInput.value = DEFAULT_MODIFIER_REGEX;
                 }
 
-                console.log("Settings loaded from localStorage:", settings);
+                console.log("Other settings loaded from localStorage:", settings);
             } else {
-                console.log("No settings found in localStorage, initializing with defaults.");
-                currentApiKey = "";
+                console.log("No other settings found in localStorage, initializing with defaults.");
                 customTones = [];
-                glossaryTerms = []; // デフォルトで用語集はなし
-                modifierCharacters = []; // デフォルトで修飾文字はなし (新規追加)
-                isReviewModeEnabled = false; // デフォルトで校閲モードは無効
+                glossaryTerms = [];
+                modifierCharacters = [];
+                isReviewModeEnabled = false;
 
-                // customTonesが空の場合、デフォルトの口調を追加
                 customTones.push({ value: 'da_dearu', name: 'だ・である調', instruction: '自称は「我ら」を使用し、語尾は「である」または「だ」調にしてください。', isConditional: false, conditions: [], elseInstruction: '' });
                 customTones.push({ value: 'taigen_dome', name: '体言止め', instruction: '自称は「我ら」を使用し、語尾は体言止めにしてください。', isConditional: false, conditions: [], elseInstruction: '' });
-                // 新しい条件付き口調「イベント」を追加
                 customTones.push({
                     value: 'event_conditional_tone',
                     name: 'イベント',
@@ -630,13 +1047,10 @@ ${modifiedText}`;
                     }],
                     elseInstruction: "原文に合わせて自称は「我々」、「我が」などを使い、「だ。」「である」調にしてください。"
                 });
-                // デフォルト修飾文字を追加
-                modifierCharacters.push({ name: 'デフォルト', regex: DEFAULT_MODIFIER_REGEX }); // 新しいデフォルト正規表現
+                modifierCharacters.push({ name: 'デフォルト', regex: DEFAULT_MODIFIER_REGEX });
 
-                saveSettings(); // デフォルト口調と修飾文字を追加したら保存
+                saveOtherSettingsToLocalStorage(); // デフォルト設定をlocalStorageに保存
 
-                if (apiKeyInput) apiKeyInput.value = '';
-                // defaultToneSelectが存在する場合のみ値を設定
                 if (defaultToneSelect) {
                     defaultToneSelect.value = 'da_dearu';
                 }
@@ -644,43 +1058,73 @@ ${modifiedText}`;
                     reviewModeCheckbox.checked = false;
                 }
 
-                populateToneDropdowns(); // 口調ドロップダウンを更新
+                populateToneDropdowns();
                 globalToneSelect.value = 'da_dearu';
                 modifierNameInput.value = 'デフォルト';
                 modifierRegexInput.value = DEFAULT_MODIFIER_REGEX;
             }
-            // 設定ロード後、校閲列の表示を更新
-            updateReviewColumnVisibility();
+
+            // APIキーの読み込みはパスフレーズモーダルで処理
+            // IndexedDBにAPIキーが保存されているかチェックし、あればパスフレーズモーダルを表示
+            const hasApiKey = await getSettingFromIndexedDB(API_KEY_ITEM_KEY);
+            if (hasApiKey) {
+                passphraseModal.classList.remove('hidden');
+                passphraseInputForDecrypt.focus();
+            } else {
+                // APIキーが保存されていない場合は、APIキー入力フィールドをクリアし、翻訳ボタンを無効化
+                apiKeyInput.value = '';
+                currentApiKey = ''; // APIキーをクリア
+                updateTranslationButtonsState();
+            }
+
+            updateReviewColumnVisibility(); // 設定ロード後、校閲列の表示を更新
         } catch (error) {
-            console.error("Error loading settings from localStorage:", error);
+            console.error("Error loading settings:", error);
             alertMessage("設定の読み込み中にエラーが発生しました。", 'error');
         }
     };
 
-    // 設定をlocalStorageに保存する関数
-    const saveSettings = () => {
+    /**
+     * 設定を保存する関数 (APIキーの保存ロジックを含む)
+     */
+    const saveSettings = async () => {
         try {
-            const settings = {
-                apiKey: apiKeyInput ? apiKeyInput.value.trim() : "", // apiKeyInputが存在しない場合を考慮
-                defaultTone: defaultToneSelect ? defaultToneSelect.value : 'da_dearu', // defaultToneSelectが存在しない場合を考慮
-                customTones: customTones, // カスタム口調も保存
-                glossaryTerms: glossaryTerms, // 用語集も保存
-                modifierCharacters: modifierCharacters, // 修飾文字も保存 (新規追加)
-                isReviewModeEnabled: isReviewModeEnabled // 校閲モードの状態を保存
-            };
-            localStorage.setItem('translationAppSettings', JSON.stringify(settings));
-            currentApiKey = settings.apiKey; // 翻訳に使用するAPIキーを更新
-            globalToneSelect.value = settings.defaultTone; // メインページの口調も更新
-            console.log("Settings saved to localStorage:", settings);
-            alertMessage("設定を保存しました。", 'success'); // 簡易的な通知
+            // APIキーとパスフレーズを取得
+            const apiKey = apiKeyInput.value.trim();
+            const passphrase = apiPassphraseInput.value.trim();
+
+            if (apiKey) { // APIキーが入力されている場合のみ保存を試みる
+                const success = await saveEncryptedApiKey(apiKey, passphrase);
+                if (success) {
+                    currentApiKey = apiKey; // 成功したらcurrentApiKeyを更新
+                    apiKeyInput.value = ''; // APIキー入力フィールドをクリア
+                    apiPassphraseInput.value = ''; // パスフレーズ入力フィールドをクリア
+                    updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+                } else {
+                    // 保存失敗時はAPIキーをクリアしない
+                    return; // 保存失敗時は処理を中断
+                }
+            } else {
+                // APIキーが空の場合、IndexedDBから削除するかどうかは要件による
+                // 今回は、空の場合は何もしない（既存のAPIキーはそのまま残る）
+                alertMessage('APIキーが入力されていません。既存のAPIキーは変更されません。', 'info');
+            }
+
+            // APIキー以外の設定をlocalStorageに保存
+            saveOtherSettingsToLocalStorage();
+
+            alertMessage("設定を保存しました。", 'success');
         } catch (error) {
-            console.error("Error saving settings to localStorage:", error);
+            console.error("Error saving settings:", error);
             alertMessage("設定の保存に失敗しました。", 'error');
         }
     };
 
-    // カスタムアラートメッセージボックス
-    // type: 'success', 'error', 'warning', 'info'
+    /**
+     * カスタムアラートメッセージボックスを表示する関数
+     * @param {string} message - 表示するメッセージ
+     * @param {string} type - メッセージの種類 ('success', 'error', 'warning', 'info')
+     */
     const alertMessage = (message, type = 'info') => {
         const alertDiv = document.createElement('div');
         let bgColor = 'bg-blue-500';
@@ -704,7 +1148,12 @@ ${modifiedText}`;
         }, 3000); // 3秒後にフェードアウト開始
     };
 
-    // --- 口調ドロップダウンを動的に生成する共通関数 ---
+    /**
+     * 口調ドロップダウンのオプションHTMLを生成する共通関数
+     * @param {Array<object>} tones - 口調の配列
+     * @param {boolean} includeDefaultOption - 「全体設定に沿う」オプションを含めるか
+     * @returns {string} オプションのHTML文字列
+     */
     const createToneOptionsHtml = (tones, includeDefaultOption = false) => {
         let optionsHtml = '';
         if (includeDefaultOption) {
@@ -716,7 +1165,9 @@ ${modifiedText}`;
         return optionsHtml;
     };
 
-    // --- 口調ドロップダウンを動的に生成する関数 ---
+    /**
+     * 口調ドロップダウンを動的に生成する関数
+     */
     const populateToneDropdowns = () => {
         // customTones配列には通常の口調と条件付き口調の両方が含まれる
         const allTones = [
@@ -747,7 +1198,9 @@ ${modifiedText}`;
         renderCustomToneList();
     };
 
-    // --- カスタム口調リストをレンダリングする関数 ---
+    /**
+     * カスタム口調リストをレンダリングする関数
+     */
     const renderCustomToneList = () => {
         if (!customToneList) return; // 要素がない場合は何もしない
 
@@ -771,7 +1224,9 @@ ${modifiedText}`;
         });
     };
 
-    // --- 翻訳ログをダウンロードする関数 ---
+    /**
+     * 翻訳ログをダウンロードする関数
+     */
     const downloadTranslationLog = () => {
         if (translationLog.length === 0) {
             alertMessage("ダウンロードする翻訳ログがありません。", 'warning');
@@ -822,7 +1277,9 @@ ${modifiedText}`;
         alertMessage("翻訳ログをダウンロードしました。", 'success');
     };
 
-    // --- 用語集リストをレンダリングする関数 ---
+    /**
+     * 用語集リストをレンダリングする関数
+     */
     const renderGlossaryTerms = () => {
         if (!glossaryTableBody) return;
 
@@ -863,7 +1320,9 @@ ${modifiedText}`;
         });
     };
 
-    // --- 用語集フォームのリセット関数 ---
+    /**
+     * 用語集フォームのリセット関数
+     */
     const resetGlossaryForm = () => {
         glossaryPosInput.value = ''; // ドロップダウンの値をリセット
         glossaryOriginalInput.value = '';
@@ -875,7 +1334,10 @@ ${modifiedText}`;
         editingGlossaryIndex = null;
     };
 
-    // --- 用語集JSONファイルを読み込む関数 ---
+    /**
+     * 用語集JSONファイルを読み込む関数
+     * @param {File} file - 読み込むファイルオブジェクト
+     */
     const readGlossaryFile = (file) => {
         if (!file) {
             alertMessage('ファイルが選択されていません。', 'warning');
@@ -901,7 +1363,10 @@ ${modifiedText}`;
         reader.readAsText(file);
     };
 
-    // --- 用語集JSONの内容を解析して追加する関数 ---
+    /**
+     * 用語集JSONの内容を解析して追加する関数
+     * @param {Array<object>} jsonContent - JSON形式の用語集データ
+     */
     const processGlossaryJsonContent = (jsonContent) => {
         if (!Array.isArray(jsonContent)) {
             alertMessage('JSONファイルは配列である必要があります。', 'error');
@@ -931,7 +1396,9 @@ ${modifiedText}`;
             }
 
             // 重複チェック (原文でチェック)
-            const isDuplicate = glossaryTerms.some(term => term.original.toLowerCase() === original.toLowerCase());
+            const isDuplicate = glossaryTerms.some((term, idx) =>
+                idx !== editingGlossaryIndex && term.original.toLowerCase() === original.toLowerCase()
+            );
             if (isDuplicate) {
                 console.warn(`Skipping duplicate original term in JSON item ${itemIndex + 1}: "${original}"`);
                 termsSkipped++;
@@ -943,7 +1410,7 @@ ${modifiedText}`;
         });
 
         if (newTermsAdded > 0) {
-            saveSettings(); // 用語集を保存
+            saveOtherSettingsToLocalStorage(); // 用語集を保存
             renderGlossaryTerms(); // リストを更新
             alertMessage(`${newTermsAdded}件の用語を追加しました。${termsSkipped > 0 ? `(${termsSkipped}件の用語をスキップしました。)` : ''}`, 'success');
         } else if (termsSkipped > 0) {
@@ -953,7 +1420,9 @@ ${modifiedText}`;
         }
     };
 
-    // --- 修飾文字フォームのリセット関数 (新規追加) ---
+    /**
+     * 修飾文字フォームのリセット関数
+     */
     const resetModifierForm = () => {
         modifierNameInput.value = 'デフォルト'; // 名前のデフォルト値
         modifierRegexInput.value = DEFAULT_MODIFIER_REGEX; // 正規表現のデフォルト値
@@ -962,8 +1431,10 @@ ${modifiedText}`;
         editingModifierIndex = null; // 編集モードを解除
     };
 
-
-    // --- タブ切り替え関数 ---
+    /**
+     * タブを切り替える関数
+     * @param {string} tabId - 表示するタブのID
+     */
     const switchTab = (tabId) => {
         // すべてのタブボタンからactiveクラスを削除し、すべてのタブコンテンツを非表示にする
         tab1Button.classList.remove('active', 'bg-blue-500', 'text-white');
@@ -988,6 +1459,8 @@ ${modifiedText}`;
             tab1Content.classList.remove('hidden');
             tab1Button.classList.add('active', 'bg-blue-500', 'text-white');
             tab1Button.classList.remove('text-gray-700', 'hover:bg-gray-100');
+            // APIキーが設定されている場合、入力フィールドに表示
+            apiKeyInput.value = currentApiKey;
         } else if (tabId === 'tab2-content') {
             tab2Content.classList.remove('hidden');
             tab2Button.classList.add('active', 'bg-blue-500', 'text-white');
@@ -1013,7 +1486,9 @@ ${modifiedText}`;
         }
     };
 
-    // --- 口調編集フォームのリセット関数 ---
+    /**
+     * 口調編集フォームのリセット関数
+     */
     const resetToneForm = () => {
         newToneNameInput.value = '';
         newToneInstructionTextarea.value = '';
@@ -1027,7 +1502,11 @@ ${modifiedText}`;
         editingToneIndex = null;
     };
 
-    // --- 条件付き口調の条件フィールドを追加する関数 ---
+    /**
+     * 条件付き口調の条件フィールドを追加する関数
+     * @param {string} condition - 条件の正規表現文字列
+     * @param {string} instruction - 指示文
+     */
     const addConditionalToneField = (condition = '', instruction = '') => {
         const conditionDiv = document.createElement('div');
         conditionDiv.className = 'conditional-tone-item p-3 border border-gray-200 rounded-lg bg-gray-100 relative';
@@ -1047,11 +1526,11 @@ ${modifiedText}`;
         conditionalToneList.appendChild(conditionDiv);
     };
 
-    // --- 校閲列の表示/非表示を切り替える関数 ---
+    /**
+     * 校閲列の表示/非表示を切り替える関数
+     */
     const updateReviewColumnVisibility = () => {
-
         const checkboxes = document.querySelectorAll('.review-checkbox'); // すべてのチェックボックスを取得
-
         checkboxes.forEach(checkbox => {
             if (isReviewModeEnabled) {
                 checkbox.classList.remove('hidden'); // 校閲モード有効ならチェックボックスを表示
@@ -1061,7 +1540,9 @@ ${modifiedText}`;
         });
     };
 
-    // --- キー列の幅を調整する関数 (新規追加) ---
+    /**
+     * キー列の幅を調整する関数
+     */
     const adjustKeyColumnWidth = () => {
         const keyCells = dataTable.querySelectorAll('td.string_key-column-header');
         let maxWidth = 0;
@@ -1102,13 +1583,72 @@ ${modifiedText}`;
         });
     };
 
+    /**
+     * 翻訳ボタンと全体翻訳ボタンの状態を更新する関数
+     */
+    const updateTranslationButtonsState = () => {
+        const isApiKeySet = !!currentApiKey; // currentApiKeyが存在するかどうか
+
+        // 全体翻訳ボタン
+        if (translateAllButton) {
+            translateAllButton.disabled = !isApiKeySet;
+            translateAllButton.querySelector('span').textContent = isApiKeySet ? 'すべて翻訳' : 'APIキー未設定';
+        }
+
+        // 個別翻訳ボタン
+        const individualTranslateButtons = document.querySelectorAll('.translate-button');
+        individualTranslateButtons.forEach(button => {
+            button.disabled = !isApiKeySet;
+            button.textContent = isApiKeySet ? '翻訳' : 'APIキー未設定';
+        });
+    };
+
+    /**
+     * パスワード表示/非表示を切り替える汎用関数
+     * @param {HTMLInputElement} inputElement - パスワード入力フィールド
+     * @param {HTMLButtonElement} toggleButton - 表示切り替えボタン
+     */
+    const setupPasswordToggle = (inputElement, toggleButton) => {
+        if (!inputElement || !toggleButton) return;
+
+        const icon = toggleButton.querySelector('i');
+
+        const showPassword = () => {
+            inputElement.type = 'text';
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash'); // 隠すアイコン
+            }
+        };
+
+        const hidePassword = () => {
+            inputElement.type = 'password';
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye'); // 表示アイコン
+            }
+        };
+
+        // マウスイベント
+        toggleButton.addEventListener('mousedown', showPassword);
+        toggleButton.addEventListener('mouseup', hidePassword);
+        toggleButton.addEventListener('mouseleave', hidePassword); // ボタンからマウスが離れたら隠す
+
+        // タッチイベント (モバイル対応)
+        toggleButton.addEventListener('touchstart', showPassword);
+        toggleButton.addEventListener('touchend', hidePassword);
+        toggleButton.addEventListener('touchcancel', hidePassword); // タッチがキャンセルされたら隠す
+    };
+
 
     // --- イベントリスナーの設定 ---
 
     // 設定ボタンクリックでモーダルを開く
     settingsButton.addEventListener('click', () => {
         settingsModal.classList.remove('hidden');
-        loadSettings(); // 設定モーダルを開くときに設定をロード
+        // 設定モーダルを開くときにAPIキー以外の設定をロード
+        // APIキーはパスフレーズモーダルでロードされる
+        loadSettings();
         switchTab('tab1-content'); // デフォルトでタブ1を表示
     });
 
@@ -1118,7 +1658,7 @@ ${modifiedText}`;
         settingsModal.classList.add('hidden');
         resetToneForm(); // 口調フォームをリセット
         resetGlossaryForm(); // 用語集フォームをリセット
-        resetModifierForm(); // 修飾文字フォームをリセット (新規追加)
+        resetModifierForm(); // 修飾文字フォームをリセット
     });
 
     // 保存ボタンクリックで設定を保存
@@ -1139,7 +1679,7 @@ ${modifiedText}`;
     tab2Button.addEventListener('click', () => switchTab('tab2-content'));
     tab3Button.addEventListener('click', () => switchTab('tab3-content'));
     glossaryTabButton.addEventListener('click', () => switchTab('glossary-tab-content'));
-    modifierTabButton.addEventListener('click', () => switchTab('modifier-tab-content')); // 新しいタブのイベント
+    modifierTabButton.addEventListener('click', () => switchTab('modifier-tab-content'));
 
 
     // 条件付き口調チェックボックスのイベント
@@ -1265,7 +1805,7 @@ ${modifiedText}`;
                 alertMessage('新しい口調を追加しました。', 'success');
             }
 
-            saveSettings();
+            saveOtherSettingsToLocalStorage(); // 口調はlocalStorageに保存
             populateToneDropdowns();
             resetToneForm(); // フォームをリセット
         });
@@ -1286,7 +1826,7 @@ ${modifiedText}`;
                     // window.confirm の代わりにカスタムアラートを使用
                     if (confirm(`「${toneName}」を削除してもよろしいですか？`)) {
                         customTones.splice(indexToDelete, 1);
-                        saveSettings();
+                        saveOtherSettingsToLocalStorage(); // 口調はlocalStorageに保存
                         populateToneDropdowns();
                         alertMessage(`${toneName} を削除しました。`, 'success');
                         resetToneForm(); // 削除後もフォームをリセット
@@ -1362,7 +1902,7 @@ ${modifiedText}`;
                 alertMessage('新しい用語を追加しました。', 'success');
             }
 
-            saveSettings();
+            saveOtherSettingsToLocalStorage(); // 用語集はlocalStorageに保存
             renderGlossaryTerms(); // リストを更新
             resetGlossaryForm(); // フォームをリセット
         });
@@ -1383,7 +1923,7 @@ ${modifiedText}`;
                     // window.confirm の代わりにカスタムアラートを使用
                     if (confirm(`用語「${termOriginal}」を削除してもよろしいですか？`)) {
                         glossaryTerms.splice(indexToDelete, 1);
-                        saveSettings();
+                        saveOtherSettingsToLocalStorage(); // localStorageに保存
                         renderGlossaryTerms();
                         alertMessage(`用語「${termOriginal}」を削除しました。`, 'success');
                         resetGlossaryForm(); // フォームをリセット
@@ -1449,7 +1989,7 @@ ${modifiedText}`;
             // window.confirm の代わりにカスタムアラートを使用
             if (confirm('すべての用語を削除してもよろしいですか？この操作は元に戻せません。')) {
                 glossaryTerms = []; // 用語集を空にする
-                saveSettings(); // localStorageに保存
+                saveOtherSettingsToLocalStorage(); // localStorageに保存
                 renderGlossaryTerms(); // UIを更新
                 alertMessage('すべての用語を削除しました。', 'success');
                 resetGlossaryForm(); // フォームをリセット
@@ -1457,7 +1997,7 @@ ${modifiedText}`;
         });
     }
 
-    // --- 修飾文字追加/編集ボタンのイベント (新規追加) ---
+    // --- 修飾文字追加/編集ボタンのイベント ---
     if (addModifierButton) {
         addModifierButton.addEventListener('click', () => {
             const name = modifierNameInput.value.trim();
@@ -1480,30 +2020,32 @@ ${modifiedText}`;
             modifierCharacters = [{ name, regex }];
             alertMessage('修飾文字を更新しました。', 'success');
 
-            saveSettings();
+            saveOtherSettingsToLocalStorage(); // 修飾文字はlocalStorageに保存
             resetModifierForm(); // フォームをリセット
         });
     }
 
-    // 修飾文字編集キャンセルボタンのイベント (新規追加)
+    // 修飾文字編集キャンセルボタンのイベント
     if (cancelModifierEditButton) {
         cancelModifierEditButton.addEventListener('click', resetModifierForm);
     }
 
-    // デフォルトにリセットボタンのイベント (新規追加)
+    // デフォルトにリセットボタンのイベント
     if (resetModifierButton) {
         resetModifierButton.addEventListener('click', () => {
             if (confirm('修飾文字の正規表現をデフォルトにリセットしてもよろしいですか？')) {
                 modifierNameInput.value = 'デフォルト';
                 modifierRegexInput.value = DEFAULT_MODIFIER_REGEX;
                 modifierCharacters = [{ name: 'デフォルト', regex: DEFAULT_MODIFIER_REGEX }];
-                saveSettings();
+                saveOtherSettingsToLocalStorage();
                 alertMessage('修飾文字をデフォルトにリセットしました。', 'success');
             }
         });
     }
 
-    // --- 翻訳済みYMLファイルをダウンロードする関数 ---
+    /**
+     * 翻訳済みYMLファイルをダウンロードする関数
+     */
     const downloadTranslatedYml = () => {
         const tableRows = dataTable.querySelectorAll('tbody tr');
         if (tableRows.length === 0 || tableRows[0].querySelector('.translation-cell').textContent === '未翻訳') {
@@ -1559,8 +2101,9 @@ ${modifiedText}`;
         alertMessage('翻訳済みYMLファイルをダウンロードしました。', 'success');
     };
 
-
-    // 「すべて翻訳」ボタンのクリックイベント
+    /**
+     * 「すべて翻訳」ボタンのクリックイベントハンドラ
+     */
     translateAllButton.addEventListener('click', async () => {
         // APIキーが設定されているかチェック
         if (!currentApiKey) {
@@ -1569,7 +2112,7 @@ ${modifiedText}`;
         }
 
         translateAllButton.disabled = true; // ボタンを無効化
-        translateAllButton.textContent = 'すべて翻訳中...'; // ボタンのテキストを更新
+        translateAllButton.querySelector('span').textContent = 'すべて翻訳中...'; // ボタンのテキストを更新
         translateAllProgressBar.style.width = '0%'; // プログレスバーをリセット
         translateAllProgressBar.classList.remove('hidden'); // プログressバーを表示
         translationProgress.classList.remove('hidden'); // 進捗表示を表示
@@ -1598,7 +2141,7 @@ ${modifiedText}`;
                     translationCell.textContent = '翻訳中...';
                     if (translateButton) {
                         translateButton.disabled = true;
-                        translateButton.textContent = '翻訳中...';
+                        translateButton.textContent = '翻訳中...'; // 個別ボタンも更新
                     }
                     if (individualToneSelect) {
                         individualToneSelect.disabled = true;
@@ -1624,7 +2167,7 @@ ${modifiedText}`;
                     } finally {
                         if (translateButton) {
                             translateButton.disabled = false;
-                            translateButton.textContent = '再翻訳';
+                            translateButton.textContent = '再翻訳'; // 個別ボタンも更新
                         }
                         if (individualToneSelect) {
                             individualToneSelect.disabled = false;
@@ -1648,7 +2191,7 @@ ${modifiedText}`;
         }
 
         translateAllButton.disabled = false; // ボタンを有効化
-        translateAllButton.textContent = 'すべて翻訳'; // ボタンのテキストを元に戻す
+        translateAllButton.querySelector('span').textContent = 'すべて翻訳'; // ボタンのテキストを元に戻す
         translateAllProgressBar.style.width = '0%'; // プログレスバーをリセット
         translateAllProgressBar.classList.add('hidden'); // プログレスバーを非表示
         translationProgress.classList.add('hidden'); // 進捗表示を非表示
@@ -1715,10 +2258,13 @@ ${modifiedText}`;
             if (rowElement) {
                 rowElement.dataset.isReviewed = e.target.checked ? 'true' : 'false';
             }
-        }
+        };
     });
 
-    // 翻訳セルを編集可能にする関数
+    /**
+     * 翻訳セルを編集可能にする関数
+     * @param {HTMLElement} cellElement - 編集対象のセル要素
+     */
     const makeTranslationCellEditable = (cellElement) => {
         // 既に編集中の場合は何もしない
         if (cellElement.querySelector('textarea')) {
@@ -1793,7 +2339,7 @@ ${modifiedText}`;
     if (reviewModeCheckbox) {
         reviewModeCheckbox.addEventListener('change', () => {
             isReviewModeEnabled = reviewModeCheckbox.checked;
-            saveSettings(); // 校閲モードの状態を保存
+            saveOtherSettingsToLocalStorage(); // 校閲モードの状態を保存
             updateReviewColumnVisibility(); // 校閲列の表示を更新
         });
     }
@@ -1826,7 +2372,71 @@ ${modifiedText}`;
         }
     };
 
+    // --- パスフレーズ入力モーダルのイベントリスナー ---
+    if (submitPassphraseButton) {
+        submitPassphraseButton.addEventListener('click', async () => {
+            const passphrase = passphraseInputForDecrypt.value.trim();
+            if (!passphrase) {
+                alertMessage('パスフレーズを入力してください。', 'warning');
+                return;
+            }
 
-    // ページ読み込み時に設定をロード
-    loadSettings();
+            try {
+                const decryptedApiKey = await loadEncryptedApiKey(passphrase);
+                if (decryptedApiKey) {
+                    currentApiKey = decryptedApiKey;
+                    apiKeyInput.value = decryptedApiKey; // 設定モーダルに表示
+                    passphraseModal.classList.add('hidden'); // モーダルを閉じる
+                    passphraseInputForDecrypt.value = ''; // パスフレーズ入力フィールドをクリア
+                    alertMessage('APIキーが正常に読み込まれました。', 'success');
+                    updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+                } else {
+                    currentApiKey = ''; // 読み込み失敗時はAPIキーをクリア
+                    updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+                }
+            } catch (error) {
+                console.error('パスフレーズの提出中にエラー:', error);
+                alertMessage('APIキーの読み込みに失敗しました。', 'error');
+                currentApiKey = ''; // 読み込み失敗時はAPIキーをクリア
+                updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+            }
+        });
+    }
+
+    if (cancelPassphraseButton) {
+        cancelPassphraseButton.addEventListener('click', () => {
+            passphraseModal.classList.add('hidden'); // モーダルを閉じる
+            passphraseInputForDecrypt.value = ''; // パスフレーズ入力フィールドをクリア
+            alertMessage('APIキーの読み込みをキャンセルしました。', 'info');
+            currentApiKey = ''; // キャンセル時はAPIキーをクリア
+            updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+        });
+    }
+
+    // パスワード表示/非表示ボタンのセットアップ
+    setupPasswordToggle(apiPassphraseInput, toggleApiPassphraseButton);
+    setupPasswordToggle(passphraseInputForDecrypt, toggleDecryptPassphraseButton);
+
+    // APIキー削除ボタンのイベントリスナー
+    if (deleteApiKeyButton) {
+        deleteApiKeyButton.addEventListener('click', deleteApiKeyFromIndexedDB);
+    }
+
+
+    /**
+     * アプリケーションの初期化関数
+     */
+    const initializeApp = async () => {
+        try {
+            await openDatabase(); // IndexedDBをオープン
+            await loadSettings(); // その他の設定とAPIキーの読み込みを試みる
+            updateTranslationButtonsState(); // 初期ロード時に翻訳ボタンの状態を更新
+        } catch (error) {
+            console.error('アプリケーションの初期化中にエラーが発生しました:', error);
+            alertMessage('アプリケーションの初期化に失敗しました。', 'error');
+        }
+    };
+
+    // アプリケーションの初期化を実行
+    initializeApp();
 });

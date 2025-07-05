@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Interフォントを読み込む -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesomeを読み込む (目のアイコン用) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- 独自のスタイルシートを読み込む -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -45,7 +47,7 @@
         <div id="table-container" class="hidden overflow-x-auto bg-gray-50 p-4 rounded-lg shadow-inner">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold text-gray-700">翻訳対象テキスト</h2>
-                <div class="flex items-center space-x-2">
+                <div class="flex justify-end items-center space-x-2">
                     <!-- 校閲モードチェックボックスを追加 -->
                     <div class="flex items-center">
                         <input type="checkbox" id="review-mode-checkbox" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
@@ -117,12 +119,25 @@
                     <!-- APIキー設定タブ -->
                     <div id="tab1-content" class="tab-content">
                         <h3 class="text-xl font-semibold text-gray-700 mb-4">Gemini APIキー設定</h3>
-                        <p class="text-gray-600 mb-4">Gemini APIを使用するためのAPIキーを入力してください。</p>
+                        <p class="text-gray-600 mb-4">Gemini APIを使用するためのAPIキーとパスフレーズを入力してください。</p>
                         <div class="mb-4">
                             <label for="api-key-input" class="block text-gray-700 text-sm font-bold mb-2">APIキー:</label>
                             <input type="text" id="api-key-input" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="YOUR GEMINI API KEY">
                         </div>
-                        <p class="text-sm text-gray-500">APIキーはブラウザのローカルストレージに保存されます。</p>
+                        <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
+                            <label for="api-passphrase-input" class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ (APIキーの暗号化用):</label>
+                            <input type="password" id="api-passphrase-input" class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="APIキーを保護するパスフレーズ">
+                            <button type="button" id="toggle-api-passphrase" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-6">
+                                <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1">このパスフレーズは保存されません。次回利用時に必要になります。</p>
+                        </div>
+                        <p class="text-sm text-gray-500">APIキーは暗号化され、ブラウザのIndexedDBに保存されます。</p>
+                        <div class="mt-6 pt-4 border-t flex justify-end">
+                            <button id="delete-api-key-button" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
+                                APIキーを削除
+                            </button>
+                        </div>
                     </div>
 
                     <!-- デフォルト口調設定タブ -->
@@ -309,6 +324,29 @@
                 </button>
                 <button id="close-settings-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
                     閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- パスフレーズ入力モーダル (新規追加) -->
+    <div id="passphrase-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">APIキーを復号化</h2>
+            <p class="text-gray-600 mb-4">保存されたAPIキーを読み込むにはパスフレーズを入力してください。</p>
+            <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
+                <label for="passphrase-input-for-decrypt" class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ:</label>
+                <input type="password" id="passphrase-input-for-decrypt" class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="APIキーを保護するパスフレーズ">
+                <button type="button" id="toggle-decrypt-passphrase" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-6">
+                    <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
+                </button>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="submit-passphrase-button" class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
+                    復号化して読み込む
+                </button>
+                <button id="cancel-passphrase-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
+                    キャンセル
                 </button>
             </div>
         </div>
