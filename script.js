@@ -1,5 +1,8 @@
 // script.js
 
+// Import the LLM service
+import { callLLMService } from './js/llmService.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     // DOM要素の取得
     const dropZone = document.getElementById('drop-zone');
@@ -21,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // タブ関連の要素
     const tab1Button = document.getElementById('tab1-button');
-    const tab2Button = document = document.getElementById('tab2-button');
+    const tab2Button = document.getElementById('tab2-button');
     const tab3Button = document.getElementById('tab3-button'); // タブ3ボタン
     const glossaryTabButton = document.getElementById('glossary-tab-button'); // 用語集タブボタン
     const modifierTabButton = document.getElementById('modifier-tab-button'); // 新しい修飾文字タブボタン
@@ -33,11 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const modifierTabContent = document.getElementById('modifier-tab-content'); // 新しい修飾文字タブコンテンツ
 
     // APIキーとデフォルト口調設定の要素
+    const llmProviderSelect = document.getElementById('llm-provider-select'); // LLMプロバイダ選択ドロップダウン (新規追加)
+    // const llmModelSelect = document.getElementById('llm-model-select'); // 削除
+    const llmModelCheckboxList = document.getElementById('llm-model-checkbox-list'); // モデル選択チェックボックスリスト (新規追加)
+    const apiKeyLabel = document.getElementById('api-key-label'); // APIキーラベル (新規追加)
     const apiKeyInput = document.getElementById('api-key-input');
     const apiPassphraseInput = document.getElementById('api-passphrase-input'); // パスフレーズ入力フィールド
     const toggleApiPassphraseButton = document.getElementById('toggle-api-passphrase'); // APIキー設定のパスフレーズ表示切り替えボタン
     const deleteApiKeyButton = document.getElementById('delete-api-key-button'); // APIキー削除ボタン (新規追加)
     const defaultToneSelect = document.getElementById('default-tone-select');
+
+    // LLMプロバイダ管理リスト関連の要素 (新規追加)
+    const llmProviderList = document.getElementById('llm-provider-list');
+
+    // 一括翻訳LLM選択ドロップダウン (新規追加)
+    const globalLlmProviderSelect = document.getElementById('global-llm-provider-select');
+    // const globalLlmModelSelect = document.getElementById('global-llm-model-select'); // 削除
 
     // 口調カスタマイズ関連の要素
     const newToneNameInput = document.getElementById('new-tone-name');
@@ -63,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const glossaryFileDropZone = document.getElementById('glossary-file-drop-zone'); // 用語集ファイルドロップゾーン
     const glossaryFileInput = document.getElementById('glossary-file-input'); // 用語集ファイル入力
     const clearGlossaryButton = document.getElementById('clear-glossary-button'); // 用語集全削除ボタン
+    const downloadGlossaryButton = document.getElementById('download-glossary-button'); // 用語集ダウンロードボタン (新規追加)
+
 
     // 修飾文字関連の要素
     const modifierNameInput = document.getElementById('modifier-name-input');
@@ -92,8 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelPassphraseButton = document.getElementById('cancel-passphrase-button');
     const deleteApiKeyFromDecryptButton = document.getElementById('delete-api-key-from-decrypt-button'); // 復号化モーダル内のAPIキー削除ボタン
 
+    // 翻訳案オーバーレイ関連の要素 (新規追加)
+    const suggestionsOverlay = document.getElementById('suggestions-overlay');
+    const suggestionsList = document.getElementById('suggestions-list');
+    const closeSuggestionsOverlayButton = document.getElementById('close-suggestions-overlay-button');
+
+
     // グローバル変数
-    let currentApiKey = ""; // 翻訳に使用するAPIキー (IndexedDBで管理)
+    let currentApiKey = ""; // 現在選択されているLLMプロバイダのAPIキー
+    let currentLlmProviderId = ''; // 現在選択されているLLMプロバイダのID (デフォルトは空)
+    let currentLlmModelId = ''; // 現在選択されているLLMモデルのID (一括翻訳や個別翻訳で実際に使用されるモデル)
     let customTones = []; // カスタム口調を保存する配列
     let editingToneIndex = null; // 編集中の口調のインデックス (nullの場合は新規追加)
     let translationLog = []; // ログを保存する配列
@@ -103,19 +127,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingModifierIndex = null; // 編集中の修飾文字のインデックス
     let currentFileName = ''; // 現在読み込まれているファイル名
     let isReviewModeEnabled = false; // 校閲モードの状態
+    let currentOverlayRow = null; // 現在オーバーレイが表示されている行
 
     // 定数
     const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w\\|\\.%@\\+]*[\\w\\]\\£\\$]'; // デフォルトの修飾文字正規表現
     const COLOR_CODE_PATTERN = '§\\w+§!'; // カラーコードの正規表現パターン
-    const COLOR_CODE_PART_PATTERN = '§\\w'; // カラーコード部分の正規表現パターン (例: §Y)
+    const COLOR_CODE_PART_PATTERN = '§\\w'; // カラーコード部分の正規化表現パターン (例: §Y)
     const CONDITIONAL_TONE_SUFFIX = '-条件付き口調'; // 条件付き口調のサフィックス
+
+    // 品詞の選択肢の定義 (新しい形式)
+    const GLOSSARY_POS_OPTIONS = [
+        { value: '', name: '選択してください' },
+        { value: 'noun', name: '名詞' },
+        { value: 'verb', name: '動詞' },
+        { value: 'adjectiv', name: '形容詞' }, // 指示通り 'adjectiv'
+        { value: 'adverb', name: '副詞' },
+        { value: 'other', name: 'その他' }
+    ];
+
+    // サポートするLLMプロバイダのリストと対応モデル
+    // この配列は `loadSettings` で初期化・更新されるため、`let` で宣言
+    let LLM_PROVIDERS = []; // loadSettingsで初期化される
 
 
     // IndexedDBの設定
     const DB_NAME = 'AUTOlinguaDB';
     const DB_VERSION = 1;
     const STORE_NAME = 'appSettings';
-    const API_KEY_ITEM_KEY = 'encryptedApiKey';
+    // APIキーはプロバイダIDごとに保存
+    const API_KEY_PREFIX = 'encryptedApiKey_'; // モデルIDを削除
     const PASSPHRASE_SALT_ITEM_KEY = 'passphraseSalt'; // パスフレーズ導出用ソルト
 
     let db; // IndexedDBのインスタンス
@@ -167,11 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const deriveKeyFromPassphrase = async (passphrase, salt) => {
         const encoder = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
-            "raw",
-            encoder.encode(passphrase),
-            { name: "PBKDF2" },
-            false,
-            ["deriveKey"]
+            "raw", // format
+            encoder.encode(passphrase), // keyData
+            { name: "PBKDF2" }, // algorithm
+            false, // extractable
+            ["deriveKey"] // keyUsages
         );
 
         return crypto.subtle.deriveKey(
@@ -240,11 +280,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * APIキーを暗号化してIndexedDBに保存する関数
+     * @param {string} providerId - LLMプロバイダのID
      * @param {string} apiKey - 保存するAPIキー
      * @param {string} passphrase - APIキーを暗号化するためのパスフレーズ
      * @returns {Promise<boolean>} 保存が成功したかどうか
      */
-const saveEncryptedApiKey = async (apiKey, passphrase) => {
+    const saveEncryptedApiKey = async (providerId, apiKey, passphrase) => {
+        const storageKey = `${API_KEY_PREFIX}${providerId}`; // モデルIDを削除
         if (!passphrase) {
             alertMessage('APIキーを保存するにはパスフレーズを入力してください。', 'warning');
             throw new Error('Passphrase is required to save API key.');
@@ -254,21 +296,22 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
             // パスフレーズ導出用ソルトの取得または生成
             let passphraseSalt = await getSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
             if (!passphraseSalt) {
-                // ここでUint8Arrayを生成し、それを保存する
-                const newSalt = generateRandomBytes(16); // Uint8Arrayを生成
-                passphraseSalt = Array.from(newSalt); // IndexedDBに保存するためにArrayに変換
+                const newSalt = generateRandomBytes(16);
+                passphraseSalt = Array.from(newSalt);
                 await saveSettingToIndexedDB(PASSPHRASE_SALT_ITEM_KEY, passphraseSalt);
-                passphraseSalt = newSalt; // deriveKeyに渡すためにUint8Arrayを保持
+                passphraseSalt = new Uint8Array(passphraseSalt);
             } else {
-                passphraseSalt = new Uint8Array(passphraseSalt); // ArrayをUint8Arrayに戻す
+                passphraseSalt = new Uint8Array(passphraseSalt);
             }
 
-            // passphraseSaltが必ずUint8Arrayであることを保証してから渡す
-            const encryptionKey = await deriveKeyFromPassphrase(passphrase, passphraseSalt); // ここでUint8Arrayが渡される
+            const encryptionKey = await deriveKeyFromPassphrase(passphrase, passphraseSalt);
             const encryptedApiKeyData = await encryptData(apiKey, encryptionKey);
 
-            await saveSettingToIndexedDB(API_KEY_ITEM_KEY, encryptedApiKeyData);
-            alertMessage('APIキーを暗号化して保存しました。', 'success');
+            // プロバイダIDをキーとして保存
+            await saveSettingToIndexedDB(storageKey, encryptedApiKeyData);
+
+            const providerName = LLM_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
+            alertMessage(`${providerName} のAPIキーを暗号化して保存しました。`, 'success');
             return true;
         } catch (error) {
             console.error('APIキーの暗号化保存に失敗しました:', error);
@@ -279,17 +322,19 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
 
     /**
      * IndexedDBから暗号化されたAPIキーを読み込み、復号化する関数
+     * @param {string} providerId - LLMプロバイダのID
      * @param {string} passphrase - APIキーを復号化するためのパスフレーズ
      * @returns {Promise<string|null>} 復号化されたAPIキー、またはnull（読み込み失敗時）
      */
-    const loadEncryptedApiKey = async (passphrase) => {
+    const loadEncryptedApiKey = async (providerId, passphrase) => {
         if (!passphrase) {
             alertMessage('APIキーを読み込むにはパスフレーズを入力してください。', 'warning');
             throw new Error('Passphrase is required to load API key.');
         }
 
         try {
-            const encryptedApiKeyData = await getSettingFromIndexedDB(API_KEY_ITEM_KEY);
+            const storageKey = `${API_KEY_PREFIX}${providerId}`;
+            const encryptedApiKeyData = await getSettingFromIndexedDB(storageKey);
             const passphraseSalt = await getSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
 
             if (!encryptedApiKeyData || !passphraseSalt) {
@@ -300,7 +345,8 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
             const encryptionKey = await deriveKeyFromPassphrase(passphrase, new Uint8Array(passphraseSalt));
             const decryptedApiKey = await decryptData(encryptedApiKeyData, encryptionKey);
 
-            alertMessage('APIキーを復号化して読み込みました。', 'success');
+            const providerName = LLM_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
+            alertMessage(`${providerName} のAPIキーを復号化して読み込みました。`, 'success');
             return decryptedApiKey;
         } catch (error) {
             console.error('APIキーの復号化読み込みに失敗しました:', error);
@@ -371,27 +417,31 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
     };
 
     /**
-     * APIキーとパスフレーズ関連データをIndexedDBから削除する関数 (新規追加)
+     * APIキーとパスフレーズ関連データをIndexedDBから削除する関数
+     * @param {string} providerId - 削除するLLMプロバイダのID
      */
-    const deleteApiKeyFromIndexedDB = async () => {
-        // window.confirm の代わりにカスタムアラートを使用
-        if (!confirm('APIキーとパスフレーズ情報をIndexedDBから削除してもよろしいですか？この操作は元に戻せません。')) {
+    const deleteApiKeyForProvider = async (providerId) => {
+        const providerName = LLM_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
+
+        if (!confirm(`${providerName} のAPIキー情報をIndexedDBから削除してもよろしいですか？この操作は元に戻せません。`)) {
             return;
         }
 
         try {
-            await deleteSettingFromIndexedDB(API_KEY_ITEM_KEY);
-            await deleteSettingFromIndexedDB(PASSPHRASE_SALT_ITEM_KEY);
-            currentApiKey = ''; // メモリ上のAPIキーをクリア
-            apiKeyInput.value = ''; // 入力フィールドをクリア
-            apiPassphraseInput.value = ''; // パスフレーズ入力フィールドをクリア
-            passphraseInputForDecrypt.value = ''; // 復号化モーダルのパスフレーズ入力フィールドをクリア
-            passphraseModal.classList.add('hidden'); // 復号化モーダルを閉じる
-            alertMessage('APIキーとパスフレーズ情報を削除しました。', 'success');
+            const storageKey = `${API_KEY_PREFIX}${providerId}`;
+            await deleteSettingFromIndexedDB(storageKey);
+            alertMessage(`${providerName} のAPIキー情報を削除しました。`, 'success');
+            // 現在選択中のプロバイダのAPIキーを削除した場合、UIを更新
+            if (currentLlmProviderId === providerId) {
+                currentApiKey = '';
+                apiKeyInput.value = '';
+            }
             updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+            renderLlmProviderList(); // リストを再描画
+            populateLlmProviderDropdowns(); // グローバルLLMプロバイダドロップダウンを更新
         } catch (error) {
-            console.error('APIキーとパスフレーズ情報の削除に失敗しました:', error);
-            alertMessage('APIキーとパスフレーズ情報の削除に失敗しました。', 'error');
+            console.error('APIキーの削除に失敗しました:', error);
+            alertMessage('APIキーの削除に失敗しました。', 'error');
         }
     };
 
@@ -447,23 +497,41 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
      * @param {string} originalText - 翻訳する原文
      * @param {string} key - 文章キー (条件付き口調の判定に使用)
      * @param {string} selectedToneValue - 選択された口調の値
+     * @param {string} llmProviderId - 使用するLLMプロバイダのID
      * @returns {Promise<object>} 翻訳結果、ステータス、エラーメッセージを含むオブジェクト
      */
-    const translateText = async (originalText, key, selectedToneValue) => {
-        if (!currentApiKey) { // APIキーが設定されていない場合は翻訳をスキップ
-            const msg = 'APIキーが設定されていません。設定モーダルでAPIキーを入力してください。';
+    const translateText = async (originalText, key, selectedToneValue, llmProviderId) => {
+        // APIキーが設定されていない場合は翻訳をスキップ
+        if (!currentApiKey || currentLlmProviderId !== llmProviderId) {
+            const msg = 'APIキーが設定されていないか、選択されたプロバイダのAPIキーがロードされていません。設定モーダルでAPIキーを入力してください。';
             console.warn(msg);
             alertMessage(msg, 'error');
-            return { translatedText: 'APIキー未設定', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A' };
+            return { translatedText: 'APIキー未設定', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A', llmModelId: 'N/A' };
         }
 
         if (!originalText || originalText.trim() === '') {
-            return { translatedText: '', status: 'Success', errorMessage: '', preModifiedText: '', postRestoredText: '' }; // 空のテキストは翻訳しない
+            return { translatedText: '', status: 'Success', errorMessage: '', preModifiedText: '', postRestoredText: '', llmModelId: 'N/A' }; // 空のテキストは翻訳しない
         }
 
         let toneInstruction = '';
         let glossaryInstructions = ''; // 用語集からの指示を追加する変数
         let colorcodeInstructions = ''; // カラーコードからの指示を追加する変数
+
+        // 翻訳に使用するモデルを決定
+        const selectedProvider = LLM_PROVIDERS.find(p => p.id === llmProviderId);
+        let effectiveLlmModel = null;
+        if (selectedProvider && selectedProvider.models) {
+            effectiveLlmModel = selectedProvider.models.find(m => m.enabled); // 最初の有効なモデルを使用
+        }
+
+        if (!effectiveLlmModel) {
+            const msg = `プロバイダ「${selectedProvider?.name || llmProviderId}」には有効なモデルが選択されていません。設定を確認してください。`;
+            console.warn(msg);
+            alertMessage(msg, 'error');
+            return { translatedText: 'モデル未選択', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A', llmModelId: 'N/A' };
+        }
+
+        const effectiveLlmModelId = effectiveLlmModel.id;
 
         // 1. 原文に用語集から該当する用語を全て抜きだす。
         // 2. 抜き出した用語データをAIに渡し、原文を用語集に合った翻訳をするように指示
@@ -518,7 +586,7 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
                     // 複数の条件がマッチした場合のエラー
                     const matchedConditionsStr = matchedConditions.map(c => c.condition).join(', ');
                     const errorMsg = `条件付き口調の条件が複数マッチしました (キー: "${key}", マッチした条件: ${matchedConditionsStr})。設定を見直してください。`;
-                    return { translatedText: '翻訳エラー', status: 'Error', errorMessage: errorMsg, preModifiedText: originalText, postRestoredText: 'N/A' };
+                    return { translatedText: '翻訳エラー', status: 'Error', errorMessage: errorMsg, preModifiedText: originalText, postRestoredText: 'N/A', llmModelId: effectiveLlmModelId };
                 } else if (matchedConditions.length === 1) {
                     // 単一の条件がマッチした場合
                     finalConditionalInstruction = matchedConditions[0].instruction;
@@ -604,10 +672,7 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
                 // AIへの指示を追加
                 if (colorcodes.length > 0) {
                     colorcodeInstructions += `その際、以下にリストされている「カラーコード以外の部分」の日本語訳は、対応する「カラーコード」と「§!」で挟んでください。`;
-                    colorcodes.forEach((entry, index) => {
-                        // entry[0]はカラーコード以外の部分、entry[1]はカラーコード部分
-                        colorcodeInstructions += `\n- カラーコード以外の部分: "${entry[0]}", カラーコード: "${entry[1]}§!"`;
-                    });
+                    colorcodeInstructions += `\n- カラーコード以外の部分: "${colorcodes.map(entry => entry[0]).join('", "')}"`;
                     colorcodeInstructions += `\n例: 原文「§Y§!Hello§!」が「こんにちは」と翻訳された場合、最終的な出力は「§Y§!こんにちは§!」としてください。`;
                 }
 
@@ -630,64 +695,27 @@ const saveEncryptedApiKey = async (apiKey, passphrase) => {
                 status: translationStatus,
                 errorMessage: errorMessageForLog,
                 preModifiedText: preModifiedText,
-                postRestoredText: 'N/A' // エラーの場合は復元されない
+                postRestoredText: 'N/A', // エラーの場合は復元されない
+                llmModelId: effectiveLlmModelId // LLMモデルIDを追加
             });
-            return { translatedText: finalTranslatedText, status: translationStatus, errorMessage: errorMessageForLog, preModifiedText: preModifiedText, postRestoredText: 'N/A' };
+            return { translatedText: finalTranslatedText, status: translationStatus, errorMessage: errorMessageForLog, preModifiedText: preModifiedText, postRestoredText: 'N/A', llmModelId: effectiveLlmModelId };
         }
 
         try {
-            let chatHistory = [];
             // AIへの最終的なプロンプト
             // AIに送るテキストは修飾文字が置き換えられた modifiedText を使用
             const prompt = `以下の英語のテキストを日本語に翻訳してください。翻訳結果のみを返してください。
 改行文字（\\n）は原文の通りに翻訳結果にも含めてください。
+余計な説明や前置き、後書きは一切含めないでください。
 ${toneInstruction}
 ${glossaryInstructions}
 ${colorcodeInstructions}
 ${modifiedText}`;
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-            const payload = { contents: chatHistory };
 
-            const apiKeyToUse = currentApiKey; // currentApiKeyを使用
+            // LLM呼び出しを抽象化された関数に置き換え
+            const llmResponse = await callLLMService(effectiveLlmModelId, prompt, currentApiKey);
+            finalTranslatedText = llmResponse.translatedText;
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`;
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('APIエラーレスポンス:', errorData);
-                let apiErrorMessage = '不明なAPIエラー';
-                if (errorData && errorData.error && errorData.error.message) {
-                    apiErrorMessage = errorData.error.message;
-                } else if (response.status === 400) {
-                    apiErrorMessage = 'リクエストが無効です。APIキーが正しいか、リクエスト形式が適切か確認してください。';
-                } else if (response.status === 401) {
-                    apiErrorMessage = '認証に失敗しました。APIキーが有効か確認してください。';
-                } else if (response.status === 403) {
-                    apiErrorMessage = 'アクセスが拒否されました。APIキーの権限を確認してください。';
-                } else if (response.status === 429) {
-                    apiErrorMessage = 'レート制限に達しました。しばらく待ってから再度お試しください。';
-                }
-                throw new Error(`APIリクエストが失敗しました: ${response.status} ${response.statusText} - ${apiErrorMessage}`);
-            }
-
-            const result = await response.json();
-
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                finalTranslatedText = result.candidates[0].content.parts[0].text;
-            } else {
-                console.warn('翻訳結果の構造が予期せぬものでした:', result);
-                finalTranslatedText = '翻訳失敗';
-                translationStatus = 'Error';
-                errorMessageForLog = '予期せぬAPIレスポンス構造';
-            }
         } catch (error) {
             finalTranslatedText = '翻訳エラー';
             translationStatus = 'Error';
@@ -724,11 +752,12 @@ ${modifiedText}`;
             status: translationStatus,
             errorMessage: errorMessageForLog,
             preModifiedText: preModifiedText, // 置換後の原文
-            postRestoredText: finalTranslatedText // 復元後の翻訳文
+            postRestoredText: finalTranslatedText, // 復元後の翻訳文
+            llmModelId: effectiveLlmModelId // LLMモデルIDを追加
         });
 
         // 翻訳結果、ステータス、エラーメッセージをオブジェクトとして返す
-        return { translatedText: finalTranslatedText, status: translationStatus, errorMessage: errorMessageForLog, preModifiedText: preModifiedText, postRestoredText: postRestoredText };
+        return { translatedText: finalTranslatedText, status: translationStatus, errorMessage: errorMessageForLog, preModifiedText: preModifiedText, postRestoredText: postRestoredText, llmModelId: effectiveLlmModelId };
     };
 
     /**
@@ -742,7 +771,7 @@ ${modifiedText}`;
             return;
         }
 
-        const keyCell = rowElement.querySelector('td:first-child'); // キーセルを取得
+        const keyCell = rowElement.querySelector('td.string_key-column-header'); // キーセルを取得
         const originalTextCell = rowElement.querySelector('.original-text-cell');
         const translationCell = rowElement.querySelector('.translation-cell');
         const translateButton = rowElement.querySelector('.translate-button');
@@ -766,8 +795,8 @@ ${modifiedText}`;
         reviewCheckbox.disabled = true; // チェックボックスを無効化
 
         try {
-            // translateText に key を渡す
-            const result = await translateText(originalText, key, selectedIndividualTone);
+            // translateText に key と現在のLLMプロバイダIDを渡す
+            const result = await translateText(originalText, key, selectedIndividualTone, currentLlmProviderId);
             if (result.status === 'Error') {
                 translationCell.textContent = `翻訳エラー: ${result.errorMessage}`;
                 alertMessage(`個別の翻訳エラー: ${result.errorMessage}`, 'error'); // 個別翻訳の場合はアラートを表示
@@ -868,6 +897,7 @@ ${modifiedText}`;
 
 
                 html += `<tr data-key="${escapeHTML(key)}" data-is-reviewed="false">`; // data-keyとdata-is-reviewedを追加
+                html += `<td class="delete-column-cell"><button class="delete-row-button"><i class="fas fa-trash-alt"></i></button></td>`; // 削除ボタンを追加
                 html += `<td class="string_key-column-header">${escapeHTML(key)}</td>`; // キーセルにクラスを追加
                 html += `<td class="original-text-cell">${escapeHTML(value)}</td>`; // 原文セルにクラスを追加
                 // 翻訳セルに title 属性を追加して、編集可能であることを示す
@@ -879,12 +909,17 @@ ${modifiedText}`;
                             <select class="individual-tone-select">
                                 </select>
                         </td>`;
-                html += `<td><button class="translate-button">翻訳</button></td>`; // 個別翻訳ボタンの初期テキスト
+                html += `<td>
+                            <button class="translate-button">翻訳</button>
+                            <button class="get-suggestions-button ml-2 bg-purple-600 text-white px-2 py-1 rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-300 text-xs">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                        </td>`; // 他の提案ボタンを追加
                 html += `</tr>`;
                 hasValidEntries = true;
             } else {
                 html += `<tr data-key="N/A" data-is-reviewed="false">`; // 解析失敗行にもdata属性を追加
-                html += `<td colspan="6" class="text-red-500">解析失敗: ${escapeHTML(line)}</td>`; // colspanを6に修正
+                html += `<td colspan="7" class="text-red-500">解析失敗: ${escapeHTML(line)}</td>`; // colspanを7に修正
                 html += `</tr>`;
                 hasValidEntries = true; // 解析失敗行も表示する場合は有効なエントリとみなす
             }
@@ -964,7 +999,10 @@ ${modifiedText}`;
                 customTones: customTones,
                 glossaryTerms: glossaryTerms,
                 modifierCharacters: modifierCharacters,
-                isReviewModeEnabled: isReviewModeEnabled
+                isReviewModeEnabled: isReviewModeEnabled,
+                llmProviders: LLM_PROVIDERS, // LLMプロバイダリストを保存 (enabled状態も含む)
+                currentLlmProviderId: currentLlmProviderId, // 現在選択中のLLMプロバイダIDを保存
+                // currentLlmModelId はAPIキー管理から独立し、選択されたプロバイダの有効モデルから動的に決定されるため、ここでは保存しない
             };
             localStorage.setItem('translationAppSettings', JSON.stringify(settings));
             globalToneSelect.value = settings.defaultTone;
@@ -980,6 +1018,42 @@ ${modifiedText}`;
      */
     const loadSettings = async () => {
         try {
+            // LLM_PROVIDERSのデフォルト値を設定
+            const DEFAULT_LLM_PROVIDERS_CONFIG = [
+                {
+                    id: 'gemini',
+                    name: 'Gemini',
+                    defaultApiKeyLabel: 'Gemini APIキー',
+                    defaultPlaceholder: 'YOUR GEMINI API KEY',
+                    models: [
+                        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', enabled: false },
+                        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', enabled: false },
+                        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', enabled: false },
+                        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', enabled: false }
+                    ]
+                },
+                {
+                    id: 'openai',
+                    name: 'Chat GPT',
+                    defaultApiKeyLabel: 'OpenAI APIキー',
+                    defaultPlaceholder: 'YOUR OPENAI API KEY',
+                    models: [
+                        { id: 'gpt-4o', name: 'GPT-4o', enabled: false },
+                        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', enabled: false }
+                    ]
+                },
+                {
+                    id: 'anthropic',
+                    name: 'Claude',
+                    defaultApiKeyLabel: 'Anthropic APIキー',
+                    defaultPlaceholder: 'YOUR ANTHROPIC API KEY',
+                    models: [
+                        { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', enabled: false },
+                        { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', enabled: false }
+                    ]
+                }
+            ];
+
             // APIキー以外の設定をlocalStorageから読み込む
             const settingsJson = localStorage.getItem('translationAppSettings');
             if (settingsJson) {
@@ -988,6 +1062,39 @@ ${modifiedText}`;
                 glossaryTerms = settings.glossaryTerms || [];
                 modifierCharacters = settings.modifierCharacters || [];
                 isReviewModeEnabled = settings.isReviewModeEnabled || false;
+
+                // LLM_PROVIDERSをデフォルト設定で初期化し、localStorageから読み込んだプロバイダで上書き/マージ
+                LLM_PROVIDERS = JSON.parse(JSON.stringify(DEFAULT_LLM_PROVIDERS_CONFIG)); // ディープコピー
+
+                if (settings.llmProviders && Array.isArray(settings.llmProviders)) {
+                    LLM_PROVIDERS = LLM_PROVIDERS.map(defaultP => {
+                        const loadedP = settings.llmProviders.find(p => p.id === defaultP.id);
+                        if (loadedP) {
+                            // 既存のプロバイダの場合、モデルのenabled状態をマージ
+                            defaultP.models = defaultP.models.map(defaultM => {
+                                const loadedM = loadedP.models.find(m => m.id === defaultM.id);
+                                return loadedM ? { ...defaultM, enabled: loadedM.enabled } : defaultM;
+                            });
+                            // ロードされたプロバイダに新しいモデルがあれば追加
+                            loadedP.models.forEach(loadedM => {
+                                if (!defaultP.models.some(m => m.id === loadedM.id)) {
+                                    defaultP.models.push(loadedM);
+                                }
+                            });
+                            return defaultP;
+                        }
+                        return defaultP;
+                    });
+                    // 以前のカスタムプロバイダも追加 (もしあれば)
+                    settings.llmProviders.forEach(loadedP => {
+                        if (!LLM_PROVIDERS.some(p => p.id === loadedP.id)) {
+                            LLM_PROVIDERS.push(loadedP);
+                        }
+                    });
+                }
+
+                currentLlmProviderId = settings.currentLlmProviderId || ''; // 初期値を空にする
+                // currentLlmModelId はAPIキー管理から独立し、選択されたプロバイダの有効モデルから動的に決定されるため、ここでは保存しない
 
                 // customTonesが空の場合、デフォルトの口調を追加
                 if (customTones.length === 0) {
@@ -1003,7 +1110,6 @@ ${modifiedText}`;
                         }],
                         elseInstruction: "原文に合わせて自称は「我々」、「我が」などを使い、「だ。」「である」調にしてください。"
                     });
-                    // IndexedDBへの保存ではなく、localStorageに保存し続ける他の設定
                     saveOtherSettingsToLocalStorage();
                 }
 
@@ -1039,6 +1145,10 @@ ${modifiedText}`;
                 modifierCharacters = [];
                 isReviewModeEnabled = false;
 
+                LLM_PROVIDERS = JSON.parse(JSON.stringify(DEFAULT_LLM_PROVIDERS_CONFIG)); // デフォルト設定で初期化
+                currentLlmProviderId = ''; // 初期値を空にする
+                // currentLlmModelId はここでは初期化しない
+
                 customTones.push({ value: 'da_dearu', name: 'だ・である調', instruction: '自称は「我ら」を使用し、語尾は「である」または「だ」調にしてください。', isConditional: false, conditions: [], elseInstruction: '' });
                 customTones.push({ value: 'taigen_dome', name: '体言止め', instruction: '自称は「我ら」を使用し、語尾は体言止めにしてください。', isConditional: false, conditions: [], elseInstruction: '' });
                 customTones.push({
@@ -1068,19 +1178,8 @@ ${modifiedText}`;
                 modifierRegexInput.value = DEFAULT_MODIFIER_REGEX;
             }
 
-            // APIキーの読み込みはパスフレーズモーダルで処理
-            // IndexedDBにAPIキーが保存されているかチェックし、あればパスフレーズモーダルを表示
-            const hasApiKey = await getSettingFromIndexedDB(API_KEY_ITEM_KEY);
-            if (hasApiKey) {
-                passphraseModal.classList.remove('hidden');
-                passphraseInputForDecrypt.focus();
-            } else {
-                // APIキーが保存されていない場合は、APIキー入力フィールドをクリアし、翻訳ボタンを無効化
-                apiKeyInput.value = '';
-                currentApiKey = ''; // APIキーをクリア
-                updateTranslationButtonsState();
-            }
-
+            // LLMプロバイダ選択ドロップダウンを更新
+            populateLlmProviderDropdowns();
             updateReviewColumnVisibility(); // 設定ロード後、校閲列の表示を更新
         } catch (error) {
             console.error("Error loading settings:", error);
@@ -1093,14 +1192,34 @@ ${modifiedText}`;
      */
     const saveSettings = async () => {
         try {
-            // APIキーとパスフレーズを取得
             const apiKey = apiKeyInput.value.trim();
             const passphrase = apiPassphraseInput.value.trim();
+            const selectedProviderId = llmProviderSelect.value;
+
+            // プロバイダが選択されていない場合はエラー
+            if (!selectedProviderId) {
+                alertMessage('APIキーを保存するには、翻訳プロバイダを選択してください。', 'warning');
+                return;
+            }
+
+            // 選択されたプロバイダのモデルのenabled状態を更新
+            const providerToUpdate = LLM_PROVIDERS.find(p => p.id === selectedProviderId);
+            if (providerToUpdate) {
+                const checkboxes = llmModelCheckboxList.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    const modelId = checkbox.dataset.modelId;
+                    const model = providerToUpdate.models.find(m => m.id === modelId);
+                    if (model) {
+                        model.enabled = checkbox.checked;
+                    }
+                });
+            }
 
             // 新しいAPIキーが入力されており、かつ既存のAPIキーと異なる場合のみ、暗号化して保存を試みる
             // または、APIキーがまだ設定されていない（初回設定）場合も保存を試みる
-            if (apiKey && (apiKey !== currentApiKey || !currentApiKey)) { // currentApiKeyのチェックを追加
-                const success = await saveEncryptedApiKey(apiKey, passphrase);
+            // currentApiKeyは現在メモリ上にロードされているAPIキーを指す
+            if (apiKey && (apiKey !== currentApiKey || !currentApiKey)) {
+                const success = await saveEncryptedApiKey(selectedProviderId, apiKey, passphrase);
                 if (success) {
                     currentApiKey = apiKey; // 成功したらcurrentApiKeyを更新
                     apiKeyInput.value = ''; // APIキー入力フィールドをクリア
@@ -1110,10 +1229,10 @@ ${modifiedText}`;
                     // 保存失敗時は処理を中断
                     return;
                 }
-            } else if (!apiKey && currentApiKey) {
-                // APIキーが入力フィールドから削除されたが、既存のAPIキーがある場合
-                // この場合、既存のAPIキーを削除するかどうかユーザーに確認するなどのロジックを追加することも可能
-                // 今回は「変更がない」とみなして何もしない、または別途削除ボタンで削除させる運用
+            } else if (!apiKey && currentApiKey && currentLlmProviderId === selectedProviderId) {
+                // APIキーが入力フィールドから削除されたが、既存のAPIキーがメモリにある場合
+                // これは、ユーザーがAPIキーをクリアしたが、実際にはまだロードされている状態
+                // この場合は何もしないか、ユーザーに明示的に削除を促す
                 alertMessage('APIキーが変更されていないため、パスフレーズは不要です。', 'info');
             } else if (!apiKey && !currentApiKey) {
                 // APIキーもパスフレーズも入力されていない場合（何もしない）
@@ -1122,6 +1241,8 @@ ${modifiedText}`;
 
             // APIキー以外の設定をlocalStorageに保存
             saveOtherSettingsToLocalStorage();
+            renderLlmProviderList(); // LLMプロバイダリストを再描画
+            populateLlmProviderDropdowns(); // グローバルLLMプロバイダドロップダウンを更新
 
             alertMessage("設定を保存しました。", 'success');
         } catch (error) {
@@ -1186,6 +1307,159 @@ ${modifiedText}`;
         });
         return optionsHtml;
     };
+
+    /**
+     * LLMプロバイダドロップダウンのオプションHTMLを生成する関数
+     * @param {Array<object>} providers - LLMプロバイダの配列
+     * @returns {string} オプションのHTML文字列
+     */
+    const createLlmProviderOptionsHtml = (providers, includeSelectOption = false) => {
+        let optionsHtml = '';
+        if (includeSelectOption) {
+            optionsHtml += '<option value="">選択してください</option>';
+        }
+        providers.forEach(provider => {
+            optionsHtml += `<option value="${escapeHTML(provider.id)}">${escapeHTML(provider.name)}</option>`;
+        });
+        return optionsHtml;
+    };
+
+    /**
+     * IndexedDBにAPIキーが保存されているLLMプロバイダと、有効なモデルを持つプロバイダのリストを取得する関数
+     * @returns {Promise<Array<object>>} 保存済みAPIキーと有効なモデルを持つLLMプロバイダの配列
+     */
+    const getSavedAndEnabledLlmProviders = async () => {
+        const savedProviders = [];
+        for (const provider of LLM_PROVIDERS) {
+            const storageKey = `${API_KEY_PREFIX}${provider.id}`;
+            const encryptedApiKey = await getSettingFromIndexedDB(storageKey);
+            if (encryptedApiKey) {
+                // APIキーが保存されており、かつ有効なモデルが少なくとも1つあるプロバイダのみを対象とする
+                const hasEnabledModel = provider.models && provider.models.some(model => model.enabled);
+                if (hasEnabledModel) {
+                    savedProviders.push({ providerId: provider.id, providerName: provider.name });
+                }
+            }
+        }
+        return savedProviders;
+    };
+
+    /**
+     * LLMプロバイダドロップダウンとモデルチェックボックスを動的に生成する関数
+     */
+    const populateLlmProviderDropdowns = async () => {
+        // 設定モーダル内のLLMプロバイダ選択ドロップダウンを更新 (全プロバイダを表示)
+        llmProviderSelect.innerHTML = createLlmProviderOptionsHtml(LLM_PROVIDERS, true); // 「選択してください」を追加
+        llmProviderSelect.value = currentLlmProviderId; // 現在選択中のプロバイダを選択
+
+        // 一括翻訳LLMプロバイダ選択ドロップダウンを更新 (保存済みかつ有効なモデルを持つプロバイダのみ表示)
+        const savedAndEnabledProviders = await getSavedAndEnabledLlmProviders();
+
+        // globalLlmProviderSelectのオプションを生成
+        let globalOptionsHtml = '<option value="">選択してください</option>'; // デフォルトで「選択してください」を追加
+        savedAndEnabledProviders.forEach(provider => {
+            globalOptionsHtml += `<option value="${escapeHTML(provider.providerId)}">${escapeHTML(provider.providerName)}</option>`;
+        });
+        globalLlmProviderSelect.innerHTML = globalOptionsHtml;
+
+        // 現在選択中のプロバイダが一括翻訳リストに存在するかチェック
+        if (savedAndEnabledProviders.some(p => p.providerId === currentLlmProviderId)) {
+            globalLlmProviderSelect.value = currentLlmProviderId;
+        } else {
+            // 存在しない場合は、「選択してください」をデフォルトにする
+            globalLlmProviderSelect.value = '';
+            currentLlmProviderId = ''; // グローバル変数もクリア
+            currentApiKey = ''; // ロードされたAPIキーもクリア
+        }
+
+        // 選択されたプロバイダに基づいてモデルチェックボックスを更新
+        renderLlmModelCheckboxes(currentLlmProviderId);
+    };
+
+    /**
+     * 指定されたプロバイダIDに基づいてLLMモデルチェックボックスを更新する関数
+     * @param {string} providerId - 選択されたLLMプロバイダのID
+     */
+    const renderLlmModelCheckboxes = (providerId) => {
+        llmModelCheckboxList.innerHTML = ''; // リストをクリア
+        const selectedProvider = LLM_PROVIDERS.find(p => p.id === providerId);
+
+        if (selectedProvider && selectedProvider.models && selectedProvider.models.length > 0) {
+            selectedProvider.models.forEach(model => {
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.className = 'flex items-center';
+                checkboxDiv.innerHTML = `
+                    <input type="checkbox" id="model-${escapeHTML(model.id)}" data-model-id="${escapeHTML(model.id)}"
+                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                           ${model.enabled ? 'checked' : ''}>
+                    <label for="model-${escapeHTML(model.id)}" class="ml-2 text-gray-700">${escapeHTML(model.name)}</label>
+                `;
+                llmModelCheckboxList.appendChild(checkboxDiv);
+
+                // チェックボックスの変更イベントリスナーを追加
+                checkboxDiv.querySelector('input').addEventListener('change', (event) => {
+                    model.enabled = event.target.checked;
+                    // モデルのenabled状態が変更されたら、localStorageに保存
+                    saveOtherSettingsToLocalStorage();
+                    // populateLlmProviderDropdowns() の呼び出しを削除またはコメントアウト
+                    // populateLlmProviderDropdowns(); // <-- この行を削除またはコメントアウト
+                });
+            });
+        } else {
+            llmModelCheckboxList.innerHTML = '<p class="text-gray-500 text-sm">プロバイダを選択してください。</p>';
+        }
+    };
+
+
+    /**
+     * 登録済みLLMプロバイダのリストをレンダリングする関数 (新規追加)
+     */
+    const renderLlmProviderList = async () => {
+        if (!llmProviderList) return;
+
+        llmProviderList.innerHTML = ''; // リストをクリア
+        let hasSavedProviders = false;
+
+        // APIキーが保存されているすべてのプロバイダを取得
+        const allProvidersWithSavedKeys = [];
+        for (const provider of LLM_PROVIDERS) {
+            const storageKey = `${API_KEY_PREFIX}${provider.id}`;
+            const encryptedApiKey = await getSettingFromIndexedDB(storageKey);
+            if (encryptedApiKey) {
+                allProvidersWithSavedKeys.push(provider);
+            }
+        }
+
+        if (allProvidersWithSavedKeys.length > 0) {
+            hasSavedProviders = true;
+            allProvidersWithSavedKeys.forEach(provider => {
+                const listItem = document.createElement('li');
+                listItem.className = 'llm-provider-item flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg';
+
+                // 有効なモデルのリストを生成
+                const enabledModels = provider.models.filter(m => m.enabled).map(m => m.name).join(', ');
+                const modelDisplay = enabledModels ? ` (${enabledModels})` : ' (モデル未選択)';
+
+                listItem.innerHTML = `
+                    <div class="flex-grow">
+                        <strong class="text-gray-800">${escapeHTML(provider.name)}</strong>
+                        <span class="ml-2 text-sm text-green-500">(保存済み)</span>
+                        <p class="text-xs text-gray-600">有効なモデル: ${escapeHTML(modelDisplay)}</p>
+                    </div>
+                    <div class="button-group flex space-x-2">
+                        <button class="edit-llm-provider-button bg-blue-500 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-600 transition-colors duration-200" data-provider-id="${escapeHTML(provider.id)}">編集</button>
+                        <button class="delete-llm-provider-button bg-red-500 text-white px-3 py-1 rounded-md text-xs hover:bg-red-600 transition-colors duration-200" data-provider-id="${escapeHTML(provider.id)}">削除</button>
+                    </div>
+                `;
+                llmProviderList.appendChild(listItem);
+            });
+        }
+
+        if (!hasSavedProviders) {
+            llmProviderList.innerHTML = '<li class="text-gray-600 text-sm text-center">APIキーが保存されているプロバイダはありません。</li>';
+        }
+    };
+
 
     /**
      * 口調ドロップダウンを動的に生成する関数
@@ -1256,8 +1530,8 @@ ${modifiedText}`;
         }
 
         // CSV header
-        // 修飾文字置換前と復元後の列を追加
-        let csvContent = "number,date,original txt,tone,translated text,status,error_message,pre_modified_text,post_restored_text\n";
+        // 修飾文字置換前と復元後の列を追加, LLMモデルIDも追加
+        let csvContent = "number,date,original txt,tone,translated text,status,error_message,pre_modified_text,post_restored_text,llm_model_id\n";
 
         // Helper to escape CSV fields
         const escapeCsvField = (field) => {
@@ -1282,7 +1556,8 @@ ${modifiedText}`;
                 entry.status,
                 entry.errorMessage, // エラーメッセージを追加
                 entry.preModifiedText || '', // 修飾文字置換前のテキスト
-                entry.postRestoredText || '' // 修飾文字復元後のテキスト
+                entry.postRestoredText || '', // 修飾文字復元後のテキスト
+                entry.llmModelId || '' // LLMモデルIDを追加
             ].map(escapeCsvField).join(',');
             csvContent += row + '\n';
         });
@@ -1319,9 +1594,12 @@ ${modifiedText}`;
                 const row = document.createElement('tr');
                 let rowHtml = '';
 
+                // 品詞の表示名を検索
+                const displayPos = GLOSSARY_POS_OPTIONS.find(opt => opt.value === term.pos)?.name || term.pos || '';
+
                 if (i === 0) {
                     // 最初の行は品詞、原文、翻訳文、ノート、アクションを結合して表示
-                    rowHtml += `<td class="py-2 px-4 border-b border-gray-200" rowspan="${altCount}">${escapeHTML(term.pos || '')}</td>`;
+                    rowHtml += `<td class="py-2 px-4 border-b border-gray-200" rowspan="${altCount}">${escapeHTML(displayPos)}</td>`;
                     rowHtml += `<td class="py-2 px-4 border-b border-gray-200" rowspan="${altCount}">${escapeHTML(term.original || '')}</td>`;
                     rowHtml += `<td class="py-2 px-4 border-b border-gray-200 glossary-original-alt-cell">${escapeHTML(term.originalAlt && term.originalAlt[i] ? term.originalAlt[i] : '')}</td>`; // 他形態の最初の要素
                     rowHtml += `<td class="py-2 px-4 border-b border-gray-200" rowspan="${altCount}">${escapeHTML(term.translation || '')}</td>`;
@@ -1346,6 +1624,11 @@ ${modifiedText}`;
      * 用語集フォームのリセット関数
      */
     const resetGlossaryForm = () => {
+        // 品詞ドロップダウンのオプションを生成
+        glossaryPosInput.innerHTML = GLOSSARY_POS_OPTIONS.map(opt =>
+            `<option value="${escapeHTML(opt.value)}">${escapeHTML(opt.name)}</option>`
+        ).join('');
+
         glossaryPosInput.value = ''; // ドロップダウンの値をリセット
         glossaryOriginalInput.value = '';
         glossaryOriginalAltInput.value = ''; // textareaをクリア
@@ -1400,19 +1683,27 @@ ${modifiedText}`;
 
         jsonContent.forEach((item, itemIndex) => {
             // 必要なフィールドを抽出
-            const original = item.term ? String(item.term).trim() : '';
+            // JSONファイルからの読み込み時は 'term' と 'variants' を想定
+            const original = item.term ? String(item.term).trim() : ''; // 'term'を'original'にマッピング
             const translation = item.translation ? String(item.translation).trim() : '';
-            const pos = item.pos ? String(item.pos).trim() : '';
-            const note = item.note ? String(item.note).trim() : ''; // noteフィールドを追加
+            const pos = item.pos ? String(item.pos).trim() : ''; // 品詞は文字列としてそのまま取得
+            const note = item.note ? String(item.note).trim() : ''; // ノート入力フィールド
 
-            // variantsが存在し、配列であればそのまま使用。そうでなければ空の配列。
+            // 'variants'が存在し、配列であればそのまま使用。そうでなければ空の配列。
             const originalAlt = Array.isArray(item.variants)
-                                ? item.variants.map(v => String(v).trim()).filter(v => v !== '')
+                                ? item.variants.map(v => String(v).trim()).filter(v => v !== '') // 'variants'を'originalAlt'にマッピング
                                 : [];
 
             // 原文が空でないことを確認
             if (!original) {
                 console.warn(`Skipping empty original term in JSON item ${itemIndex + 1}:`, item);
+                termsSkipped++;
+                return;
+            }
+
+            // 品詞が定義済みのオプションに含まれているかチェック (空文字列も許可)
+            if (pos !== '' && !GLOSSARY_POS_OPTIONS.some(option => option.value === pos)) {
+                console.warn(`Skipping term with invalid POS in JSON item ${itemIndex + 1}: "${pos}" is not a valid part of speech.`, item);
                 termsSkipped++;
                 return;
             }
@@ -1427,6 +1718,7 @@ ${modifiedText}`;
                 return;
             }
 
+            // glossaryTermsは'original'と'originalAlt'プロパティを持つ形式で保存
             glossaryTerms.push({ pos, original, originalAlt, translation, note }); // noteを追加
             newTermsAdded++;
         });
@@ -1481,8 +1773,13 @@ ${modifiedText}`;
             tab1Content.classList.remove('hidden');
             tab1Button.classList.add('active', 'bg-blue-500', 'text-white');
             tab1Button.classList.remove('text-gray-700', 'hover:bg-gray-100');
-            // APIキーが設定されている場合、入力フィールドに表示
-            apiKeyInput.value = currentApiKey;
+            // ここでllmProviderSelectを「選択してください」にリセット
+            llmProviderSelect.value = '';
+            renderLlmModelCheckboxes(''); // モデルチェックボックスリストをクリア
+            apiKeyInput.value = ''; // APIキー入力フィールドもクリア
+            currentApiKey = ''; // currentApiKeyもクリア
+            updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+            renderLlmProviderList(); // LLMプロバイダリストを再描画
         } else if (tabId === 'tab2-content') {
             tab2Content.classList.remove('hidden');
             tab2Button.classList.add('active', 'bg-blue-500', 'text-white');
@@ -1609,12 +1906,20 @@ ${modifiedText}`;
      * 翻訳ボタンと全体翻訳ボタンの状態を更新する関数
      */
     const updateTranslationButtonsState = () => {
-        const isApiKeySet = !!currentApiKey; // currentApiKeyが存在するかどうか
+        // 現在APIキーが設定されているかチェック
+        const isApiKeySet = !!currentApiKey;
 
         // 全体翻訳ボタン
         if (translateAllButton) {
+            let providerName = 'プロバイダ未選択';
+            if (currentLlmProviderId) {
+                const selectedProvider = LLM_PROVIDERS.find(p => p.id === currentLlmProviderId);
+                providerName = selectedProvider ? selectedProvider.name : 'プロバイダ未選択';
+            }
+
             translateAllButton.disabled = !isApiKeySet;
-            translateAllButton.querySelector('span').textContent = isApiKeySet ? 'すべて翻訳' : 'APIキー未設定';
+            // ボタンのテキストに選択されているプロバイダ名を表示
+            translateAllButton.querySelector('span').textContent = isApiKeySet ? `すべて翻訳 (${providerName})` : 'APIキー未設定';
         }
 
         // 個別翻訳ボタン
@@ -1622,6 +1927,13 @@ ${modifiedText}`;
         individualTranslateButtons.forEach(button => {
             button.disabled = !isApiKeySet;
             button.textContent = isApiKeySet ? '翻訳' : 'APIキー未設定';
+        });
+
+        // 他の提案ボタン
+        const getSuggestionsButtons = document.querySelectorAll('.get-suggestions-button');
+        getSuggestionsButtons.forEach(button => {
+            button.disabled = !isApiKeySet;
+            // アイコンの表示は、オーバーレイの状態によって制御されるため、ここでは変更しない
         });
     };
 
@@ -1660,6 +1972,190 @@ ${modifiedText}`;
         toggleButton.addEventListener('touchstart', showPassword);
         toggleButton.addEventListener('touchend', hidePassword);
         toggleButton.addEventListener('touchcancel', hidePassword); // タッチがキャンセルされたら隠す
+    };
+
+    /**
+     * 翻訳案を取得し、オーバーレイに表示する関数
+     * @param {HTMLElement} rowElement - 翻訳案を表示する対象の行要素
+     */
+    const showSuggestionsOverlay = async (rowElement) => {
+        // APIキーが設定されていない場合は処理を中断
+        if (!currentApiKey) {
+            alertMessage('APIキーが設定されていません。設定モーダルでAPIキーを入力してください。', 'error');
+            return;
+        }
+
+        const originalTextCell = rowElement.querySelector('.original-text-cell');
+        const keyCell = rowElement.querySelector('td.string_key-column-header');
+        const originalText = originalTextCell.textContent;
+        const key = keyCell.textContent;
+        const translationCell = rowElement.querySelector('.translation-cell');
+        const individualToneSelect = rowElement.querySelector('.individual-tone-select');
+        const selectedIndividualTone = individualToneSelect.value; // 個別設定の口調を取得
+
+        currentOverlayRow = rowElement; // 現在オーバーレイが表示されている行を記録
+
+        // オーバーレイの位置を設定
+        const rect = translationCell.getBoundingClientRect();
+        const tableRect = tableContainer.getBoundingClientRect();
+
+        suggestionsOverlay.style.top = `${rect.top - tableRect.top + rect.height + 5}px`; // 行の下に表示
+        suggestionsOverlay.style.left = `${rect.left - tableRect.left}px`;
+        suggestionsOverlay.style.width = `${rect.width}px`; // 翻訳セルの幅に合わせる
+        suggestionsOverlay.classList.remove('hidden');
+        suggestionsList.innerHTML = '<div class="text-center text-gray-500">翻訳案を読み込み中...</div>'; // ロード中メッセージ
+
+        // 他の提案ボタンのアイコンを上向きに変更
+        const currentSuggestionButton = rowElement.querySelector('.get-suggestions-button i');
+        if (currentSuggestionButton) {
+            currentSuggestionButton.classList.remove('fa-caret-down');
+            currentSuggestionButton.classList.add('fa-caret-up');
+        }
+
+        const suggestionResults = [];
+
+        // 現在選択されているプロバイダの、有効なモデルからのみ翻訳案を取得
+        const selectedProvider = LLM_PROVIDERS.find(p => p.id === currentLlmProviderId);
+        if (selectedProvider && selectedProvider.models) {
+            for (const model of selectedProvider.models) {
+                if (model.enabled) {
+                    try {
+                        const result = await translateText(originalText, key, selectedIndividualTone, selectedProvider.id);
+                        if (result.status === 'Success') {
+                            suggestionResults.push({
+                                providerName: selectedProvider.name,
+                                modelName: model.name, // モデル名も追加
+                                translatedText: result.translatedText
+                            });
+                        } else {
+                            suggestionResults.push({
+                                providerName: selectedProvider.name,
+                                modelName: model.name,
+                                translatedText: `エラー: ${result.errorMessage}`,
+                                isError: true
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching suggestion from ${selectedProvider.name} (${model.name}):`, error);
+                        suggestionResults.push({
+                            providerName: selectedProvider.name,
+                            modelName: model.name,
+                            translatedText: `エラー: ${error.message || '不明なエラー'}`,
+                            isError: true
+                        });
+                    }
+                }
+            }
+        }
+
+
+        // 翻訳案をリストに表示
+        suggestionsList.innerHTML = ''; // クリア
+        if (suggestionResults.length === 0) {
+            suggestionsList.innerHTML = '<div class="text-center text-gray-500">翻訳案が見つかりませんでした。</div>';
+        } else {
+            suggestionResults.forEach(suggestion => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'flex items-start justify-between p-2 border-b border-gray-100 last:border-b-0';
+                suggestionItem.innerHTML = `
+                    <div class="flex-grow pr-2">
+                        <strong class="text-sm text-gray-700">${escapeHTML(suggestion.providerName)} (${escapeHTML(suggestion.modelName)}):</strong>
+                        <span class="text-gray-900 text-sm whitespace-pre-wrap ${suggestion.isError ? 'text-red-500' : ''}">${escapeHTML(suggestion.translatedText)}</span>
+                    </div>
+                    <button class="copy-suggestion-button text-gray-500 hover:text-blue-600 transition-colors duration-200 p-1 rounded-md" title="この翻訳を採用">
+                        <i class="fa-solid fa-clone"></i>
+                    </button>
+                `;
+                // コピーボタンにイベントリスナーを追加
+                const copyButton = suggestionItem.querySelector('.copy-suggestion-button');
+                if (copyButton) {
+                    copyButton.addEventListener('click', () => {
+                        translationCell.textContent = suggestion.translatedText;
+                        hideSuggestionsOverlay(); // 採用したらオーバーレイを閉じる
+                        alertMessage('翻訳を適用しました。', 'success');
+                    });
+                }
+                suggestionsList.appendChild(suggestionItem);
+            });
+        }
+    };
+
+    /**
+     * 翻訳案オーバーレイを非表示にする関数
+     */
+    const hideSuggestionsOverlay = () => {
+        suggestionsOverlay.classList.add('hidden');
+        if (currentOverlayRow) {
+            const currentSuggestionButton = currentOverlayRow.querySelector('.get-suggestions-button i');
+            if (currentSuggestionButton) {
+                currentSuggestionButton.classList.remove('fa-caret-up');
+                currentSuggestionButton.classList.add('fa-caret-down');
+            }
+            currentOverlayRow = null; // 現在の行をリセット
+        }
+    };
+
+    /**
+     * 指定されたLLMプロバイダのAPIキーをIndexedDBから読み込み、UIとcurrentApiKeyを更新する関数
+     * @param {string} providerId - LLMプロバイダのID
+     */
+    const loadApiKeyForSelectedProvider = async (providerId) => {
+        const provider = LLM_PROVIDERS.find(p => p.id === providerId);
+
+        // APIキー入力欄を有効化し、パスワード表示/非表示ボタンも有効化
+        apiKeyInput.disabled = false;
+        apiPassphraseInput.disabled = false;
+        toggleApiPassphraseButton.disabled = false;
+        deleteApiKeyButton.disabled = false;
+
+        if (!providerId || !provider) {
+            // 「選択してください」が選択された場合や、プロバイダが見つからない場合
+            apiKeyInput.value = '';
+            currentApiKey = '';
+            apiKeyLabel.textContent = 'APIキー:';
+            apiKeyInput.placeholder = 'APIキー';
+            updateTranslationButtonsState();
+            return;
+        }
+
+        // APIキーのラベルとプレースホルダーを更新
+        apiKeyLabel.textContent = `${provider.defaultApiKeyLabel || 'APIキー'}:`;
+        apiKeyInput.placeholder = provider.defaultPlaceholder || 'YOUR API KEY';
+
+        // currentApiKeyが既に選択されたプロバイダのものであれば、再ロードやパスフレーズ要求は不要
+        if (currentLlmProviderId === providerId && currentApiKey) {
+            apiKeyInput.value = currentApiKey; // 実際のAPIキーを表示
+            updateTranslationButtonsState();
+            return;
+        }
+
+        try {
+            const storageKey = `${API_KEY_PREFIX}${providerId}`;
+            const encryptedApiKeyData = await getSettingFromIndexedDB(storageKey);
+
+            if (encryptedApiKeyData) {
+                // パスフレーズモーダルを表示して復号化を促す
+                passphraseModal.classList.remove('hidden');
+                passphraseInputForDecrypt.focus();
+                // 復号化が成功したら、currentApiKeyが設定される
+                // ここではUIを更新するのみ
+                apiKeyInput.value = '********'; // 読み込み中はマスク
+                currentApiKey = ''; // 一旦クリア
+                currentLlmProviderId = providerId; // パスフレーズモーダルで使うために設定
+            } else {
+                apiKeyInput.value = ''; // APIキーが保存されていない場合はクリア
+                currentApiKey = '';
+                currentLlmProviderId = providerId; // プロバイダは選択された状態にする
+                alertMessage(`「${provider.name}」のAPIキーは保存されていません。`, 'info');
+            }
+        } catch (error) {
+            console.error(`Failed to load API key for ${providerId}:`, error);
+            apiKeyInput.value = '';
+            currentApiKey = '';
+            alertMessage(`「${provider.name}」のAPIキーの読み込みに失敗しました。`, 'error');
+        } finally {
+            updateTranslationButtonsState();
+        }
     };
 
 
@@ -1703,6 +2199,60 @@ ${modifiedText}`;
     glossaryTabButton.addEventListener('click', () => switchTab('glossary-tab-content'));
     modifierTabButton.addEventListener('click', () => switchTab('modifier-tab-content'));
 
+    // LLMプロバイダ選択ドロップダウンの変更イベント (設定モーダル内)
+    llmProviderSelect.addEventListener('change', async (event) => {
+        const selectedProviderId = event.target.value;
+        currentLlmProviderId = selectedProviderId; // グローバル変数に設定
+        renderLlmModelCheckboxes(selectedProviderId); // モデルチェックボックスを更新
+        if (selectedProviderId) {
+            // 選択されたプロバイダのAPIキーをロード
+            await loadApiKeyForSelectedProvider(selectedProviderId);
+        } else {
+            apiKeyInput.value = '';
+            currentApiKey = '';
+            updateTranslationButtonsState();
+        }
+    });
+
+    // グローバル一括翻訳LLMプロバイダ選択ドロップダウンの変更イベント (メイン画面)
+    globalLlmProviderSelect.addEventListener('change', async (event) => {
+        const selectedProviderId = event.target.value;
+        currentLlmProviderId = selectedProviderId; // グローバル変数に設定
+        if (selectedProviderId) {
+            // 選択されたプロバイダのAPIキーをロード
+            await loadApiKeyForSelectedProvider(selectedProviderId);
+        } else {
+            currentApiKey = '';
+            alertMessage('一括翻訳プロバイダが選択されていません。', 'warning');
+        }
+        updateTranslationButtonsState(); // ボタンのテキストを更新
+    });
+
+
+    // LLMプロバイダリストの編集/削除ボタンのイベント委譲
+    if (llmProviderList) {
+        llmProviderList.addEventListener('click', async (e) => {
+            const targetButton = e.target.closest('button');
+            if (!targetButton) return;
+
+            const providerId = targetButton.dataset.providerId;
+            if (!providerId) return;
+
+            if (targetButton.classList.contains('edit-llm-provider-button')) {
+                // 編集ボタンがクリックされたら、そのプロバイダを選択し、APIキー入力フィールドを更新
+                llmProviderSelect.value = providerId;
+                currentLlmProviderId = providerId;
+                renderLlmModelCheckboxes(providerId); // モデルチェックボックスを更新
+
+                await loadApiKeyForSelectedProvider(providerId);
+                const providerName = LLM_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
+                alertMessage(`${providerName} を編集モードにしました。`, 'info');
+            } else if (targetButton.classList.contains('delete-llm-provider-button')) {
+                // 削除ボタンがクリックされたら、APIキーを削除
+                await deleteApiKeyForProvider(providerId);
+            }
+        });
+    }
 
     // 条件付き口調チェックボックスのイベント
     if (conditionalToneCheckbox) {
@@ -1790,7 +2340,7 @@ ${modifiedText}`;
                 if (!instruction) {
                     alertMessage('AIへの指示文を入力してください。', 'warning');
                     return;
-                }
+                 }
                  // 通常口調の場合、サフィックスがあれば削除
                 if (name.endsWith(CONDITIONAL_TONE_SUFFIX)) {
                     name = name.substring(0, name.length - CONDITIONAL_TONE_SUFFIX.length);
@@ -1905,6 +2455,12 @@ ${modifiedText}`;
                 return;
             }
 
+            // 品詞が定義済みのオプションに含まれているかチェック
+            if (!GLOSSARY_POS_OPTIONS.some(option => option.value === pos)) {
+                alertMessage('選択された品詞は無効です。', 'warning');
+                return;
+            }
+
             // 重複チェック (原文でチェック)
             const isDuplicate = glossaryTerms.some((term, idx) =>
                 idx !== editingGlossaryIndex && term.original.toLowerCase() === original.toLowerCase()
@@ -1956,7 +2512,13 @@ ${modifiedText}`;
                 if (!isNaN(indexToEdit) && indexToEdit >= 0 && indexToEdit < glossaryTerms.length) {
                     editingGlossaryIndex = indexToEdit;
                     const termToEdit = glossaryTerms[indexToEdit];
+                    
+                    // 品詞ドロップダウンのオプションを生成
+                    glossaryPosInput.innerHTML = GLOSSARY_POS_OPTIONS.map(opt =>
+                        `<option value="${escapeHTML(opt.value)}">${escapeHTML(opt.name)}</option>`
+                    ).join('');
                     glossaryPosInput.value = termToEdit.pos; // ドロップダウンの値を設定
+                    
                     glossaryOriginalInput.value = termToEdit.original;
                     // textareaには配列を改行で結合して文字列として設定
                     glossaryOriginalAltInput.value = Array.isArray(termToEdit.originalAlt) ? termToEdit.originalAlt.join('\n') : '';
@@ -2019,6 +2581,49 @@ ${modifiedText}`;
         });
     }
 
+    /**
+     * 用語集をJSONファイルとしてダウンロードする関数 (新規追加)
+     */
+    const downloadGlossary = () => {
+        if (glossaryTerms.length === 0) {
+            alertMessage("ダウンロードする用語集がありません。", 'warning');
+            return;
+        }
+
+        // ダウンロード用にプロパティ名を変更した新しい配列を作成
+        const glossaryForDownload = glossaryTerms.map(term => ({
+            term: term.original,       // 'original' を 'term' に変更
+            translation: term.translation,
+            pos: term.pos,
+            variants: term.originalAlt, // 'originalAlt' を 'variants' に変更
+            note: term.note
+        }));
+
+        // JSONデータを整形して文字列に変換
+        const jsonContent = JSON.stringify(glossaryForDownload, null, 2);
+
+        const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date();
+        const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        a.download = `glossary_${dateString}.json`; // ファイル名を自動生成
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url); // オブジェクトURLを解放
+        alertMessage("用語集をダウンロードしました。", 'success');
+    };
+
+    // 用語集ダウンロードボタンのイベントリスナー
+    if (downloadGlossaryButton) {
+        downloadGlossaryButton.addEventListener('click', downloadGlossary);
+    }
+
+
     // --- 修飾文字追加/編集ボタンのイベント ---
     if (addModifierButton) {
         addModifierButton.addEventListener('click', () => {
@@ -2079,7 +2684,7 @@ ${modifiedText}`;
         let ymlContent = `${selectedPrefix}\n`; // 先頭行を設定
 
         tableRows.forEach(row => {
-            const key = row.querySelector('td:first-child').textContent;
+            const key = row.querySelector('td.string_key-column-header').textContent; // キーセルは2番目のtdになった
             let translatedText = row.querySelector('.translation-cell').textContent; // let に変更
             const reviewCheckbox = row.querySelector('.review-checkbox');
             const isRowReviewed = reviewCheckbox ? reviewCheckbox.checked : false; // チェックボックスの状態を取得
@@ -2128,9 +2733,18 @@ ${modifiedText}`;
      */
     translateAllButton.addEventListener('click', async () => {
         // APIキーが設定されているかチェック
-        if (!currentApiKey) {
+        const selectedLlmProviderForBatchId = currentLlmProviderId; // グローバル設定のプロバイダを使用
+        const isApiKeySet = !!currentApiKey;
+        if (!isApiKeySet) {
             alertMessage('APIキーが設定されていません。「設定」からAPIキーを入力してください。', 'error');
             return; // 処理を中断
+        }
+
+        // 選択されたプロバイダに有効なモデルがあるかチェック
+        const selectedProvider = LLM_PROVIDERS.find(p => p.id === selectedLlmProviderForBatchId);
+        if (!selectedProvider || !selectedProvider.models.some(m => m.enabled)) {
+            alertMessage(`選択されたプロバイダ (${selectedProvider?.name || selectedLlmProviderForBatchId}) に有効なモデルがありません。設定を確認してください。`, 'error');
+            return;
         }
 
         translateAllButton.disabled = true; // ボタンを無効化
@@ -2149,7 +2763,7 @@ ${modifiedText}`;
         for (let i = 0; i < totalRows; i += chunkSize) {
             const chunk = allRows.slice(i, i + chunkSize);
             const translationPromises = chunk.map(async (row) => {
-                const keyCell = row.querySelector('td:first-child'); // キーセルを取得
+                const keyCell = row.querySelector('td.string_key-column-header'); // キーセルを取得
                 const originalTextCell = row.querySelector('.original-text-cell');
                 const translationCell = row.querySelector('.translation-cell');
                 const translateButton = row.querySelector('.translate-button');
@@ -2173,7 +2787,7 @@ ${modifiedText}`;
                     try {
                         // ここで個別口調が'default'の場合、globalToneSelect.valueを渡す
                         const effectiveToneForTranslation = individualToneSelect.value === 'default' ? selectedGlobalTone : individualToneSelect.value;
-                        const result = await translateText(originalText, key, effectiveToneForTranslation);
+                        const result = await translateText(originalText, key, effectiveToneForTranslation, selectedLlmProviderForBatchId); // 一括翻訳で選択されたLLMプロバイダを使用
                         if (result.status === 'Error') {
                             translationCell.textContent = `翻訳エラー: ${result.errorMessage}`;
                         } else {
@@ -2213,7 +2827,7 @@ ${modifiedText}`;
         }
 
         translateAllButton.disabled = false; // ボタンを有効化
-        translateAllButton.querySelector('span').textContent = 'すべて翻訳'; // ボタンのテキストを元に戻す
+        updateTranslationButtonsState(); // ボタンのテキストを元に戻す
         translateAllProgressBar.style.width = '0%'; // プログレスバーをリセット
         translateAllProgressBar.classList.add('hidden'); // プログレスバーを非表示
         translationProgress.classList.add('hidden'); // 進捗表示を非表示
@@ -2264,7 +2878,7 @@ ${modifiedText}`;
         fileInput.click();
     });
 
-    // 個別翻訳ボタン、翻訳セル、校閲チェックボックスのイベント委譲
+    // 個別翻訳ボタン、翻訳セル、校閲チェックボックス、他の提案ボタン、削除ボタンのイベント委譲
     dataTable.addEventListener('click', (e) => {
         if (e.target.classList.contains('translate-button')) {
             const rowElement = e.target.closest('tr'); // クリックされたボタンの親行を取得
@@ -2280,8 +2894,41 @@ ${modifiedText}`;
             if (rowElement) {
                 rowElement.dataset.isReviewed = e.target.checked ? 'true' : 'false';
             }
-        };
+        } else if (e.target.closest('.get-suggestions-button')) { // 他の提案ボタンがクリックされた場合
+            const button = e.target.closest('.get-suggestions-button');
+            const rowElement = button.closest('tr');
+
+            if (suggestionsOverlay.classList.contains('hidden') || currentOverlayRow !== rowElement) {
+                // オーバーレイが非表示の場合、または別の行で表示されている場合
+                showSuggestionsOverlay(rowElement);
+            } else {
+                // 同じ行でオーバーレイが表示されている場合
+                hideSuggestionsOverlay();
+            }
+        } else if (e.target.closest('.delete-row-button')) { // 削除ボタンがクリックされた場合
+            const button = e.target.closest('.delete-row-button');
+            const rowElement = button.closest('tr');
+            if (rowElement) {
+                if (confirm('この行を削除してもよろしいですか？')) {
+                    rowElement.remove(); // 行をDOMから削除
+                    alertMessage('行を削除しました。', 'success');
+                }
+            }
+        }
     });
+
+    // オーバーレイ外をクリックで閉じる
+    document.addEventListener('click', (e) => {
+        if (!suggestionsOverlay.classList.contains('hidden') &&
+            !suggestionsOverlay.contains(e.target) &&
+            !e.target.closest('.get-suggestions-button')) { // 他の提案ボタン自身は除く
+            hideSuggestionsOverlay();
+        }
+    });
+
+    // オーバーレイの閉じるボタン
+    closeSuggestionsOverlayButton.addEventListener('click', hideSuggestionsOverlay);
+
 
     /**
      * 翻訳セルを編集可能にする関数
@@ -2404,7 +3051,8 @@ ${modifiedText}`;
             }
 
             try {
-                const decryptedApiKey = await loadEncryptedApiKey(passphrase);
+                // currentLlmProviderId はパスフレーズモーダル表示時に設定済み
+                const decryptedApiKey = await loadEncryptedApiKey(currentLlmProviderId, passphrase);
                 if (decryptedApiKey) {
                     currentApiKey = decryptedApiKey;
                     apiKeyInput.value = decryptedApiKey; // 設定モーダルに表示
@@ -2412,6 +3060,8 @@ ${modifiedText}`;
                     passphraseInputForDecrypt.value = ''; // パスフレーズ入力フィールドをクリア
                     alertMessage('APIキーが正常に読み込まれました。', 'success');
                     updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
+                    renderLlmProviderList(); // リストを再描画
+                    populateLlmProviderDropdowns(); // グローバルLLMプロバイダドロップダウンを更新
                 } else {
                     currentApiKey = ''; // 読み込み失敗時はAPIキーをクリア
                     updateTranslationButtonsState(); // 翻訳ボタンの状態を更新
@@ -2439,14 +3089,14 @@ ${modifiedText}`;
     setupPasswordToggle(apiPassphraseInput, toggleApiPassphraseButton);
     setupPasswordToggle(passphraseInputForDecrypt, toggleDecryptPassphraseButton);
 
-    // APIキー削除ボタンのイベントリスナー
+    // APIキー削除ボタンのイベントリスナー (APIキー入力フィールドの横にあるボタン)
     if (deleteApiKeyButton) {
-        deleteApiKeyButton.addEventListener('click', deleteApiKeyFromIndexedDB);
+        deleteApiKeyButton.addEventListener('click', () => deleteApiKeyForProvider(llmProviderSelect.value));
     }
 
     // 復号化モーダル内のAPIキー削除ボタンのイベントリスナー
     if (deleteApiKeyFromDecryptButton) {
-        deleteApiKeyFromDecryptButton.addEventListener('click', deleteApiKeyFromIndexedDB);
+        deleteApiKeyFromDecryptButton.addEventListener('click', () => deleteApiKeyForProvider(currentLlmProviderId));
     }
 
 
