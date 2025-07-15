@@ -2,6 +2,8 @@
 
 // Import the LLM service
 import { callLLMService } from './js/llmService.js';
+import { initializeTableFilters, escapeHTML } from './js/tableFilter.js'; // フィルターモジュールをインポート
+import { initializeAdvancedFilter } from './js/advancedFilter.js'; // 高度なフィルターモジュールをインポート
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM要素の取得
@@ -37,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // APIキーとデフォルト口調設定の要素
     const llmProviderSelect = document.getElementById('llm-provider-select'); // LLMプロバイダ選択ドロップダウン (新規追加)
-    // const llmModelSelect = document.getElementById('llm-model-select'); // 削除
+    // const llmModelSelect = document.getElementById('llm-model-select'); // 削除 
     const llmModelCheckboxList = document.getElementById('llm-model-checkbox-list'); // モデル選択チェックボックスリスト (新規追加)
     const apiKeyLabel = document.getElementById('api-key-label'); // APIキーラベル (新規追加)
     const apiKeyInput = document.getElementById('api-key-input');
@@ -51,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 一括翻訳LLM選択ドロップダウン (新規追加)
     const globalLlmProviderSelect = document.getElementById('global-llm-provider-select');
-    // const globalLlmModelSelect = document.getElementById('global-llm-model-select'); // 削除
+    // const globalLlmModelSelect = document.getElementById('global-llm-model-select'); // 削除 
 
     // 口調カスタマイズ関連の要素
     const newToneNameInput = document.getElementById('new-tone-name');
@@ -113,6 +115,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const suggestionsList = document.getElementById('suggestions-list');
     const closeSuggestionsOverlayButton = document.getElementById('close-suggestions-overlay-button');
 
+    // フィルター機能関連の要素 (新規追加)
+    const statusFilterSelect = document.getElementById('status-filter-select');
+    const toneFilterSelect = document.getElementById('tone-filter-select');
+    const keywordSearchInput = document.getElementById('keyword-search-input');
+    const resetFiltersButton = document.getElementById('reset-filters-button');
+    const advancedFilterButton = document.getElementById('advanced-filter-button'); // 高度なフィルターボタン
+    const advancedFilterModal = document.getElementById('advanced-filter-modal'); // 高度なフィルターモーダル
+    const closeAdvancedFilterModalButton = document.getElementById('close-advanced-filter-modal-button'); // 高度なフィルターモーダルを閉じるボタン
+    const cancelAdvancedFilterButton = document.getElementById('cancel-advanced-filter-button'); // 高度なフィルターキャンセルボタン
+    const applyAdvancedFilterButton = document.getElementById('apply-advanced-filter-button'); // 高度なフィルター適用ボタン
+    const filterCanvas = document.getElementById('filter-canvas'); // フィルターキャンバス
+
 
     // グローバル変数
     let currentApiKey = ""; // 現在選択されているLLMプロバイダのAPIキー
@@ -128,6 +142,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFileName = ''; // 現在読み込まれているファイル名
     let isReviewModeEnabled = false; // 校閲モードの状態
     let currentOverlayRow = null; // 現在オーバーレイが表示されている行
+
+    // フィルターモジュールのインスタンスを保持する変数
+    let tableFilter = null;
+    let advancedFilter = null; // 高度なフィルターモジュールのインスタンス
+
 
     // 定数
     const DEFAULT_MODIFIER_REGEX = '@?[\\[@\\$\\£][\\w\\|\\.%@\\+]*[\\w\\]\\£\\$]'; // デフォルトの修飾文字正規表現
@@ -630,8 +649,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 while ((match = generalModifierRegex.exec(modifiedText)) !== null) {
                     const originalMatch = match[0];
                     const placeholder = `${codePlaceholderPrefix}${placeholderCounter++}§`; // ユニークなプレースホルダー
-                    matchResults.push([originalMatch, placeholder]);
                     modifiedText = modifiedText.split(originalMatch).join(placeholder);
+                    matchResults.push([originalMatch, placeholder]);
                 }
             } catch (e) {
                 console.error("無効な修飾文字正規表現:", e);
@@ -665,8 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // modifiedTextから元の甲文字列全体を一時的なプレースホルダーで置き換える
                     const placeholder = `${codePlaceholderPrefix}${placeholderCounter++}§`;
-                    matchResults.push([fullMatch, placeholder]); // 復元のためにmatchResultsに追加
                     modifiedText = modifiedText.split(fullMatch).join(placeholder);
+                    matchResults.push([fullMatch, placeholder]); // 復元のためにmatchResultsに追加
                 }
 
                 // AIへの指示を追加
@@ -816,6 +835,7 @@ ${modifiedText}`;
             translateButton.textContent = '再翻訳';
             individualToneSelect.disabled = false; // ドロップダウンを有効化
             reviewCheckbox.disabled = false; // チェックボックスを有効化
+            tableFilter.applyFilters(); // 翻訳後にフィルターを再適用
         }
     };
 
@@ -946,19 +966,8 @@ ${modifiedText}`;
         populateToneDropdowns(); // 新しい行が追加されたので、口調ドロップダウンを更新
         updateReviewColumnVisibility(); // ファイルロード時に校閲列の表示を更新
         updateTranslationButtonsState(); // APIキーの状態に基づいてボタンを更新
+        tableFilter.updateAllTableRows(); // 新しい行がロードされたことをフィルターモジュールに通知
     };
-
-    /**
-     * HTMLエスケープ関数 (XSS対策)
-     * @param {string} str - エスケープする文字列
-     * @returns {string} エスケープされた文字列
-     */
-    const escapeHTML = (str) => {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-    };
-
     /**
      * ファイルを読み込む関数
      * @param {File} file - 読み込むファイルオブジェクト
@@ -1490,6 +1499,12 @@ ${modifiedText}`;
             selectElement.innerHTML = createToneOptionsHtml(allTones, true); // 個別設定には「全体設定に沿う」オプションを追加
         });
 
+        // フィルター機能の口調ドロップダウンも更新
+        if (tableFilter) { // tableFilterが初期化されていることを確認
+            tableFilter.updateToneFilterOptions(allTones);
+        }
+
+
         // カスタム口調リストを更新 (タブ3の内容)
         renderCustomToneList();
     };
@@ -1688,11 +1703,6 @@ ${modifiedText}`;
             const translation = item.translation ? String(item.translation).trim() : '';
             const pos = item.pos ? String(item.pos).trim() : ''; // 品詞は文字列としてそのまま取得
             const note = item.note ? String(item.note).trim() : ''; // ノート入力フィールド
-
-            // 'variants'が存在し、配列であればそのまま使用。そうでなければ空の配列。
-            const originalAlt = Array.isArray(item.variants)
-                                ? item.variants.map(v => String(v).trim()).filter(v => v !== '') // 'variants'を'originalAlt'にマッピング
-                                : [];
 
             // 原文が空でないことを確認
             if (!original) {
@@ -2073,6 +2083,7 @@ ${modifiedText}`;
                         translationCell.textContent = suggestion.translatedText;
                         hideSuggestionsOverlay(); // 採用したらオーバーレイを閉じる
                         alertMessage('翻訳を適用しました。', 'success');
+                        tableFilter.applyFilters(); // 翻訳セルが更新されたらフィルターを再適用
                     });
                 }
                 suggestionsList.appendChild(suggestionItem);
@@ -2684,6 +2695,11 @@ ${modifiedText}`;
         let ymlContent = `${selectedPrefix}\n`; // 先頭行を設定
 
         tableRows.forEach(row => {
+            // フィルターで非表示になっている行はスキップ
+            if (row.classList.contains('hidden')) {
+                return;
+            }
+
             const key = row.querySelector('td.string_key-column-header').textContent; // キーセルは2番目のtdになった
             let translatedText = row.querySelector('.translation-cell').textContent; // let に変更
             const reviewCheckbox = row.querySelector('.review-checkbox');
@@ -2832,6 +2848,7 @@ ${modifiedText}`;
         translateAllProgressBar.classList.add('hidden'); // プログレスバーを非表示
         translationProgress.classList.add('hidden'); // 進捗表示を非表示
         alertMessage('すべての翻訳が完了しました。', 'success');
+        tableFilter.applyFilters(); // 全体翻訳後にフィルターを再適用
     });
 
 
@@ -2893,6 +2910,7 @@ ${modifiedText}`;
             const rowElement = e.target.closest('tr');
             if (rowElement) {
                 rowElement.dataset.isReviewed = e.target.checked ? 'true' : 'false';
+                tableFilter.applyFilters(); // 校閲状態が変更されたらフィルターを再適用
             }
         } else if (e.target.closest('.get-suggestions-button')) { // 他の提案ボタンがクリックされた場合
             const button = e.target.closest('.get-suggestions-button');
@@ -2912,6 +2930,7 @@ ${modifiedText}`;
                 if (confirm('この行を削除してもよろしいですか？')) {
                     rowElement.remove(); // 行をDOMから削除
                     alertMessage('行を削除しました。', 'success');
+                    tableFilter.updateAllTableRows(); // 行が削除されたことをフィルターモジュールに通知
                 }
             }
         }
@@ -2965,7 +2984,13 @@ ${modifiedText}`;
 
         const finishEditing = () => {
             const newText = textarea.value;
-            cellElement.textContent = newText; // セルの内容を更新
+            // 変更があった場合のみ更新
+            if (newText !== originalText) {
+                cellElement.textContent = newText; // セルの内容を更新
+                tableFilter.applyFilters(); // 翻訳セルが更新されたらフィルターを再適用
+            } else {
+                cellElement.textContent = originalText; // 変更がなければ元のテキストに戻す
+            }
             // 翻訳セルが手動で編集された場合でも、校閲済みとみなさない
             // const rowElement = cellElement.closest('tr'); // このブロックを削除
             // if (rowElement) {
@@ -3010,6 +3035,7 @@ ${modifiedText}`;
             isReviewModeEnabled = reviewModeCheckbox.checked;
             saveOtherSettingsToLocalStorage(); // 校閲モードの状態を保存
             updateReviewColumnVisibility(); // 校閲列の表示を更新
+            tableFilter.applyFilters(); // 校閲モードの変更時にフィルターを再適用
         });
     }
 
@@ -3099,15 +3125,53 @@ ${modifiedText}`;
         deleteApiKeyFromDecryptButton.addEventListener('click', () => deleteApiKeyForProvider(currentLlmProviderId));
     }
 
+    // --- 高度なフィルター関連イベントリスナー ---
+    if (advancedFilterButton) {
+        advancedFilterButton.addEventListener('click', () => {
+            advancedFilterModal.classList.remove('hidden');
+            // 高度なフィルターUIを初期化または現在の検索タグから再構築
+            // initializeAdvancedFilterはinitializeAppで一度呼ばれているので、ここではUIを更新するだけ
+            // buildFilterUIFromQueryはadvancedFilterモジュール内で呼ばれる
+        });
+    }
 
-    /**
-     * アプリケーションの初期化関数
-     */
+    if (closeAdvancedFilterModalButton) {
+        closeAdvancedFilterModalButton.addEventListener('click', () => {
+            advancedFilterModal.classList.add('hidden');
+        });
+    }
+
+    if (cancelAdvancedFilterButton) {
+        cancelAdvancedFilterButton.addEventListener('click', () => {
+            advancedFilterModal.classList.add('hidden');
+        });
+    }
+
     const initializeApp = async () => {
         try {
             await openDatabase(); // IndexedDBをオープン
             await loadSettings(); // その他の設定とAPIキーの読み込みを試みる
             updateTranslationButtonsState(); // 初期ロード時に翻訳ボタンの状態を更新
+
+            // フィルターモジュールを初期化
+            // customTonesを直接渡すのではなく、取得する関数を渡すことで、常に最新のcustomTonesを参照できるようにする
+            tableFilter = initializeTableFilters(dataTable, () => customTones);
+            tableFilter.updateToneFilterOptions(customTones); // 初期口調オプションを設定
+            tableFilter.applyFilters(); // 初期フィルターを適用
+
+            // 高度なフィルターモジュールを初期化
+            advancedFilter = initializeAdvancedFilter({
+                modalElement: advancedFilterModal,
+                openButton: advancedFilterButton, // 変更点: openButton を advancedFilterButton に設定
+                closeButton: closeAdvancedFilterModalButton,
+                cancelButton: cancelAdvancedFilterButton,
+                applyButton: applyAdvancedFilterButton,
+                canvasElement: filterCanvas,
+                keywordInputElement: keywordSearchInput, // メインのキーワード入力欄に連携
+                mainTableFilter: tableFilter, // メインのテーブルフィルターインスタンスを渡す
+                getCustomTones: () => customTones // カスタム口調を取得する関数を渡す
+            });
+
         } catch (error) {
             console.error('アプリケーションの初期化中にエラーが発生しました:', error);
             alertMessage('アプリケーションの初期化に失敗しました。', 'error');

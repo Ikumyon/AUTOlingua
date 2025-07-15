@@ -376,3 +376,96 @@ body {
     display: flex;
     gap: 8px; /* ボタン間のスペース */
 }
+/* 無効な正規表現が入力された際の入力ボックスのスタイル */
+.invalid-regex {
+    border-color: #ef4444 !important; /* Tailwindのred-500 */
+    box-shadow: 0 0 0 1px #ef4444;
+}
+
+.highlight { /*ハイライト */
+    background-color: #fef08a; /* Tailwindのyellow-200 */
+    padding: 0 2px;
+    border-radius: 3px;
+    color: inherit; /* 親要素の文字色を継承 */
+}
+
+/* --- ここから高度なフィルター機能のスタイル --- */
+.filter-block {
+    position: relative; /* ★修正点: ドラッグハンドルの絶対位置指定の基準にする */
+    padding-left: 24px; /* Space for guideline and indentation */
+    margin-bottom: 12px;
+}
+
+.filter-block-content {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 12px;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+/* ドラッグ中のブロックのスタイル */
+.filter-block.is-dragging {
+    opacity: 0.5;
+    background: #e0e7ff; /* A light blue to indicate dragging */
+    z-index: 10; /* ★追加: 他の要素の上に表示されるようにする */
+}
+
+/* ドラッグハンドルのアイコンのスタイル */
+.filter-block .drag-handle {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: grab;
+    color: #9ca3af;
+    padding: 4px;
+    z-index: 5; /* ★追加: 他の要素より手前に表示 */
+}
+.filter-block .drag-handle:active {
+    cursor: grabbing;
+}
+
+/* ネスト用の垂直ガイドライン */
+.filter-block .guideline {
+    position: absolute;
+    left: 14px;
+    top: 0;
+    width: 2px;
+    background-color: #d1d5db;
+    height: 100%;
+}
+
+/* ガイドライン用の水平コネクタ */
+.filter-block .guideline-connector {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background-color: #d1d5db;
+}
+
+/* トップレベルのルートブロックのガイドラインを非表示 */
+.filter-block.is-root > .guideline,
+.filter-block.is-root > .guideline-connector {
+    display: none;
+}
+/* グループ内の最後のブロックのガイドラインを短くする */
+.filter-block:last-child > .guideline {
+    height: 50%;
+}
+
+/* ロジックブロック（AND/ORコンテナ）のスタイル */
+.logic-block > .filter-block-content {
+    background-color: #f3f4f6; /* gray-100 */
+}
+
+/* ドロップ可能な場所を示すプレースホルダーのスタイル */
+.drop-placeholder {
+    height: 40px;
+    background-color: #e0e7ff; /* indigo-100 */
+    border: 2px dashed #6366f1; /* indigo-500 */
+    border-radius: 8px;
+    margin: 8px 0;
+}
