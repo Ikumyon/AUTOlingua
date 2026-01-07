@@ -10,10 +10,9 @@ body {
 
 /* テーブルの基本的なスタイル */
 #data-table {
-    table-layout: fixed; /* 固定テーブルレイアウトに変更して、列幅の制御を容易にする */
-    width: 100%; /* 親要素の幅いっぱいに広がるように設定 */
-    border-collapse: collapse; /* セルのボーダーを結合 */
+    min-width: max-content; /* ←これが決定打 */
 }
+
 
 #data-table th,
 #data-table td {
@@ -118,9 +117,17 @@ body {
 }
 
 /* アクション列のスタイル (6番目の列) */
+/* アクション列：中身を必ず1行に収める */
 #data-table th.action-column-header {
-    width: 123px; /* ボタンが収まる最小幅 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    white-space: nowrap;   /* ← 改行させない */
+    flex-wrap: nowrap;     /* ← 折り返さない */
 }
+
 #data-table td.action-column-header {
     text-align: center; /* ボタンを中央寄せ */
 }
@@ -463,9 +470,12 @@ body {
 
 /* ドロップ可能な場所を示すプレースホルダーのスタイル */
 .drop-placeholder {
-    height: 40px;
-    background-color: #e0e7ff; /* indigo-100 */
-    border: 2px dashed #6366f1; /* indigo-500 */
+    border: 2px dashed #3b82f6;
     border-radius: 8px;
-    margin: 8px 0;
+    height: 44px;          /* 掴みやすさ */
+    margin: 6px 0;
+    background: rgba(59, 130, 246, 0.06);
+
+    pointer-events: none;  /* ←これが超重要：破線が当たり判定を奪わない */
 }
+

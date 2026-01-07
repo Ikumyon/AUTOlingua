@@ -439,45 +439,65 @@ export function initializeAdvancedFilter({
      * @param {DragEvent} e
      */
     function handleDragOver(e) {
-        e.preventDefault(); // ドロップを許可するために必須
+        e.preventDefault();
+        e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
+
+        updatePlaceholderPosition(e);
         return false;
     }
 
-    /**
-     * ドラッグ要素がドロップターゲットに入った時の処理
-     * @param {DragEvent} e
-     */
-    function handleDragEnter(e) {
-        e.preventDefault();
-        e.stopPropagation();
+    function updatePlaceholderPosition(e) {
+        if (!draggedElement) return;
+
         const dropTarget = e.target.closest('.filter-block');
         const dropContainer = e.target.closest('.logic-block-body');
-
-        if (!draggedElement) return;
 
         if (placeholder) placeholder.remove();
         placeholder = document.createElement('div');
         placeholder.className = 'drop-placeholder';
 
-        // ドロップ先がコンテナ（.logic-block-body）の場合
+        // 1) コンテナ内に落とす場合
         if (dropContainer) {
-            const children = Array.from(dropContainer.children).filter(c => c !== draggedElement);
-            // マウスカーソルのY座標から挿入位置を決定
-            const targetElement = children.find(child => e.clientY < child.getBoundingClientRect().top + child.offsetHeight / 2);
+            const children = Array.from(dropContainer.children)
+                .filter(c => c !== draggedElement && !c.classList.contains('drop-placeholder'));
+
+            // 「一番近い中心」を探す（判定を甘く・安定化）
+            let targetElement = null;
+            let bestDist = Infinity;
+            for (const child of children) {
+                const rect = child.getBoundingClientRect();
+                const centerY = rect.top + rect.height / 2;
+                const dist = Math.abs(e.clientY - centerY);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    targetElement = (e.clientY < centerY) ? child : child.nextSibling;
+                }
+            }
             dropContainer.insertBefore(placeholder, targetElement || null);
-        } 
-        // ドロップ先が他のブロックの場合
-        else if (dropTarget && dropTarget !== draggedElement && !dropTarget.contains(draggedElement)) {
+            return;
+        }
+
+        // 2) 他ブロックの前後に落とす場合
+        if (dropTarget && dropTarget !== draggedElement && !dropTarget.contains(draggedElement)) {
             const rect = dropTarget.getBoundingClientRect();
-            // ブロックの半分より上か下かで挿入位置を決定
-            const isAfter = e.clientY > rect.top + rect.height / 2;
+
+            // しきい値に「ゆとり」を入れる（半分きっちり判定をやめる）
+            const afterThreshold = rect.top + rect.height * 0.55; // 50%→55%など好みで調整
+            const isAfter = e.clientY > afterThreshold;
+
             if (isAfter) {
                 dropTarget.parentNode.insertBefore(placeholder, dropTarget.nextSibling);
             } else {
                 dropTarget.parentNode.insertBefore(placeholder, dropTarget);
             }
         }
+    }
+
+    function handleDragEnter(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        updatePlaceholderPosition(e);
     }
 
     /**

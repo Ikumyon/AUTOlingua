@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // APIキーとデフォルト口調設定の要素
     const llmProviderSelect = document.getElementById('llm-provider-select'); // LLMプロバイダ選択ドロップダウン (新規追加)
     // const llmModelSelect = document.getElementById('llm-model-select'); // 削除 
-    const llmModelCheckboxList = document.getElementById('llm-model-checkbox-list'); // モデル選択チェックボックスリスト (新規追加)
+    const llmModelCheckboxList = document.getElementById('llm-model-checkbox-list');     const addLlmModelButton = document.getElementById('add-llm-model-button'); // 利用するモデル 追加ボタン
+// モデル選択チェックボックスリスト (新規追加)
     const apiKeyLabel = document.getElementById('api-key-label'); // APIキーラベル (新規追加)
     const apiKeyInput = document.getElementById('api-key-input');
     const apiPassphraseInput = document.getElementById('api-passphrase-input'); // パスフレーズ入力フィールド
@@ -519,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} llmProviderId - 使用するLLMプロバイダのID
      * @returns {Promise<object>} 翻訳結果、ステータス、エラーメッセージを含むオブジェクト
      */
-    const translateText = async (originalText, key, selectedToneValue, llmProviderId) => {
+    const translateText = async (originalText, key, selectedToneValue, llmProviderId, llmModelIdOverride = null) => {
         // APIキーが設定されていない場合は翻訳をスキップ
         if (!currentApiKey || currentLlmProviderId !== llmProviderId) {
             const msg = 'APIキーが設定されていないか、選択されたプロバイダのAPIキーがロードされていません。設定モーダルでAPIキーを入力してください。';
@@ -538,19 +539,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 翻訳に使用するモデルを決定
         const selectedProvider = LLM_PROVIDERS.find(p => p.id === llmProviderId);
-        let effectiveLlmModel = null;
-        if (selectedProvider && selectedProvider.models) {
-            effectiveLlmModel = selectedProvider.models.find(m => m.enabled); // 最初の有効なモデルを使用
-        }
 
-        if (!effectiveLlmModel) {
-            const msg = `プロバイダ「${selectedProvider?.name || llmProviderId}」には有効なモデルが選択されていません。設定を確認してください。`;
-            console.warn(msg);
-            alertMessage(msg, 'error');
-            return { translatedText: 'モデル未選択', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A', llmModelId: 'N/A' };
-        }
+            let effectiveLlmModelId = null;
 
-        const effectiveLlmModelId = effectiveLlmModel.id;
+            if (llmModelIdOverride) {
+            const m = selectedProvider?.models?.find(x => x.id === llmModelIdOverride);
+            if (!m || !m.enabled) {
+                const msg = `選択モデルが無効です: ${selectedProvider?.name || llmProviderId} / ${llmModelIdOverride}`;
+                alertMessage(msg, 'error');
+                return { translatedText: 'モデル未選択', status: 'Error', errorMessage: msg, preModifiedText: originalText, postRestoredText: 'N/A', llmModelId: 'N/A' };
+            }
+            effectiveLlmModelId = m.id;
+            } else {
+                const m = selectedProvider?.models?.find(x => x.enabled);
+                if (!m) { /* 既存のエラー処理 */ }
+                effectiveLlmModelId = m.id;
+            }
 
         // 1. 原文に用語集から該当する用語を全て抜きだす。
         // 2. 抜き出した用語データをAIに渡し、原文を用語集に合った翻訳をするように指示
@@ -1034,32 +1038,21 @@ ${modifiedText}`;
                     name: 'Gemini',
                     defaultApiKeyLabel: 'Gemini APIキー',
                     defaultPlaceholder: 'YOUR GEMINI API KEY',
-                    models: [
-                        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', enabled: false },
-                        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', enabled: false },
-                        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', enabled: false },
-                        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', enabled: false }
-                    ]
+                    models: []
                 },
                 {
                     id: 'openai',
                     name: 'Chat GPT',
                     defaultApiKeyLabel: 'OpenAI APIキー',
                     defaultPlaceholder: 'YOUR OPENAI API KEY',
-                    models: [
-                        { id: 'gpt-4o', name: 'GPT-4o', enabled: false },
-                        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', enabled: false }
-                    ]
+                    models: []
                 },
                 {
                     id: 'anthropic',
                     name: 'Claude',
                     defaultApiKeyLabel: 'Anthropic APIキー',
                     defaultPlaceholder: 'YOUR ANTHROPIC API KEY',
-                    models: [
-                        { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', enabled: false },
-                        { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', enabled: false }
-                    ]
+                    models: []
                 }
             ];
 
@@ -1364,23 +1357,29 @@ ${modifiedText}`;
         // 一括翻訳LLMプロバイダ選択ドロップダウンを更新 (保存済みかつ有効なモデルを持つプロバイダのみ表示)
         const savedAndEnabledProviders = await getSavedAndEnabledLlmProviders();
 
-        // globalLlmProviderSelectのオプションを生成
-        let globalOptionsHtml = '<option value="">選択してください</option>'; // デフォルトで「選択してください」を追加
-        savedAndEnabledProviders.forEach(provider => {
-            globalOptionsHtml += `<option value="${escapeHTML(provider.providerId)}">${escapeHTML(provider.providerName)}</option>`;
+        // globalLlmProviderSelectのオプションを生成（モデル別）
+        let globalOptionsHtml = '<option value="">選択してください</option>';
+
+        savedAndEnabledProviders.forEach(p => {
+            const provider = LLM_PROVIDERS.find(x => x.id === p.providerId);
+            if (!provider || !provider.models) return;
+
+            provider.models
+                .filter(m => m.enabled)
+                .forEach(m => {
+                    // valueは「providerId::modelId」にする（modelId単体だと衝突しうるため）
+                    const v = `${provider.id}::${m.id}`;
+                    globalOptionsHtml += `<option value="${escapeHTML(v)}">${escapeHTML(provider.name)} / ${escapeHTML(m.id)}</option>`;
+                });
         });
         globalLlmProviderSelect.innerHTML = globalOptionsHtml;
-
-        // 現在選択中のプロバイダが一括翻訳リストに存在するかチェック
-        if (savedAndEnabledProviders.some(p => p.providerId === currentLlmProviderId)) {
-            globalLlmProviderSelect.value = currentLlmProviderId;
+        // デフォルト選択（現在のproviderId/modelIdで復元できる場合のみ）
+        const currentValue = (currentLlmProviderId && currentLlmModelId) ? `${currentLlmProviderId}::${currentLlmModelId}` : '';
+        if (currentValue && globalOptionsHtml.includes(`value="${escapeHTML(currentValue)}"`)) {
+            globalLlmProviderSelect.value = currentValue;
         } else {
-            // 存在しない場合は、「選択してください」をデフォルトにする
             globalLlmProviderSelect.value = '';
-            currentLlmProviderId = ''; // グローバル変数もクリア
-            currentApiKey = ''; // ロードされたAPIキーもクリア
         }
-
         // 選択されたプロバイダに基づいてモデルチェックボックスを更新
         renderLlmModelCheckboxes(currentLlmProviderId);
     };
@@ -1393,31 +1392,125 @@ ${modifiedText}`;
         llmModelCheckboxList.innerHTML = ''; // リストをクリア
         const selectedProvider = LLM_PROVIDERS.find(p => p.id === providerId);
 
-        if (selectedProvider && selectedProvider.models && selectedProvider.models.length > 0) {
-            selectedProvider.models.forEach(model => {
-                const checkboxDiv = document.createElement('div');
-                checkboxDiv.className = 'flex items-center';
-                checkboxDiv.innerHTML = `
-                    <input type="checkbox" id="model-${escapeHTML(model.id)}" data-model-id="${escapeHTML(model.id)}"
-                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                           ${model.enabled ? 'checked' : ''}>
-                    <label for="model-${escapeHTML(model.id)}" class="ml-2 text-gray-700">${escapeHTML(model.name)}</label>
-                `;
-                llmModelCheckboxList.appendChild(checkboxDiv);
-
-                // チェックボックスの変更イベントリスナーを追加
-                checkboxDiv.querySelector('input').addEventListener('change', (event) => {
-                    model.enabled = event.target.checked;
-                    // モデルのenabled状態が変更されたら、localStorageに保存
-                    saveOtherSettingsToLocalStorage();
-                    // populateLlmProviderDropdowns() の呼び出しを削除またはコメントアウト
-                    // populateLlmProviderDropdowns(); // <-- この行を削除またはコメントアウト
-                });
-            });
-        } else {
+        // プロバイダ未選択
+        if (!providerId || !selectedProvider) {
             llmModelCheckboxList.innerHTML = '<p class="text-gray-500 text-sm">プロバイダを選択してください。</p>';
+            return;
         }
+
+        // models を必ず配列として扱う
+        if (!Array.isArray(selectedProvider.models)) selectedProvider.models = [];
+
+        // 追加ボタン（1回だけバインド）
+        if (addLlmModelButton && !addLlmModelButton.dataset.bound) {
+            addLlmModelButton.dataset.bound = 'true';
+            addLlmModelButton.addEventListener('click', () => {
+                const currentProviderId = llmProviderSelect?.value || providerId;
+                const provider = LLM_PROVIDERS.find(p => p.id === currentProviderId);
+                if (!provider) {
+                    alertMessage('先に翻訳プロバイダを選択してください。', 'warning');
+                    return;
+                }
+                if (!Array.isArray(provider.models)) provider.models = [];
+                const uid = `uid_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+                provider.models.push({ id: '', name: '', enabled: true, _uid: uid, isCustom: true });
+                saveOtherSettingsToLocalStorage();
+                renderLlmModelCheckboxes(currentProviderId);
+            });
+            saveOtherSettingsToLocalStorage();
+                renderLlmModelCheckboxes(providerId);
+        };
+
+        // モデルがまだ無い場合もUIは出す（空メッセージのみ）
+        if (selectedProvider.models.length === 0) {
+            llmModelCheckboxList.innerHTML = '<p class="text-gray-500 text-sm">モデルがありません。下の「追加」で入力してください。</p>';
+            return;
+        }
+
+        selectedProvider.models.forEach((model, idx) => {
+            if (!model._uid) model._uid = `uid_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
+
+            // 現在値（重複チェック用）
+            const currentValue = (model.id || '').trim();
+
+            row.innerHTML = `
+                <input type="checkbox"
+                       class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                       ${model.enabled && currentValue ? 'checked' : ''}>
+                <input type="text"
+                       class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="モデルIDを入力（例: gpt-4o-mini / gemini-1.5-pro / claude-3-5-sonnet）"
+                       value="${escapeHTML(currentValue)}">
+                <button type="button"
+                        class="bg-red-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm whitespace-nowrap">
+                    削除
+                </button>
+            `;
+
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            const input = row.querySelector('input[type="text"]');
+            const delBtn = row.querySelector('button');
+
+            // チェックで有効/無効
+            checkbox.addEventListener('change', (e) => {
+                const v = (input.value || '').trim();
+                if (!v) {
+                    e.target.checked = false;
+                    model.enabled = false;
+                    alertMessage('モデルIDが空の行は有効化できません。', 'warning');
+                } else {
+                    model.enabled = e.target.checked;
+                }
+                saveOtherSettingsToLocalStorage();
+            });
+
+            // テキスト変更でIDを更新（blur時に確定）
+            const commitValue = () => {
+                const v = (input.value || '').trim();
+
+                // 重複チェック（空は除外）
+                if (v) {
+                    const dup = selectedProvider.models.some((m, j) => j !== idx && (m.id || '').trim() === v);
+                    if (dup) {
+                        alertMessage('同じモデルIDが既にあります。別のIDにしてください。', 'warning');
+                        input.value = escapeHTML((model.id || '').trim());
+                        return;
+                    }
+                }
+
+                model.id = v;
+                model.name = v; // 表示名はIDと同一扱い
+                // 空なら強制無効
+                if (!v) {
+                    model.enabled = false;
+                    checkbox.checked = false;
+                }
+                saveOtherSettingsToLocalStorage();
+            };
+
+            input.addEventListener('blur', commitValue);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
+
+            // 削除
+            delBtn.addEventListener('click', () => {
+                if (!confirm('このモデル行を削除しますか？')) return;
+                selectedProvider.models.splice(idx, 1);
+                saveOtherSettingsToLocalStorage();
+                renderLlmModelCheckboxes(providerId);
+            });
+
+            llmModelCheckboxList.appendChild(row);
+        });
     };
+
 
 
     /**
@@ -2227,17 +2320,25 @@ ${modifiedText}`;
 
     // グローバル一括翻訳LLMプロバイダ選択ドロップダウンの変更イベント (メイン画面)
     globalLlmProviderSelect.addEventListener('change', async (event) => {
-        const selectedProviderId = event.target.value;
-        currentLlmProviderId = selectedProviderId; // グローバル変数に設定
-        if (selectedProviderId) {
-            // 選択されたプロバイダのAPIキーをロード
-            await loadApiKeyForSelectedProvider(selectedProviderId);
-        } else {
+        const v = event.target.value || '';
+        if (!v) {
             currentApiKey = '';
-            alertMessage('一括翻訳プロバイダが選択されていません。', 'warning');
+            // 一括翻訳用の選択もクリア
+            currentLlmProviderId = '';
+            currentLlmModelId = '';
+            alertMessage('一括翻訳モデルが選択されていません。', 'warning');
+            updateTranslationButtonsState();
+            return;
         }
-        updateTranslationButtonsState(); // ボタンのテキストを更新
+
+        const [providerId, modelId] = v.split('::');
+        currentLlmProviderId = providerId;  // APIキー読み込みに必要
+        currentLlmModelId = modelId;        // 一括翻訳で使うモデル
+
+        await loadApiKeyForSelectedProvider(providerId);
+        updateTranslationButtonsState();
     });
+
 
 
     // LLMプロバイダリストの編集/削除ボタンのイベント委譲
@@ -2749,19 +2850,22 @@ ${modifiedText}`;
      */
     translateAllButton.addEventListener('click', async () => {
         // APIキーが設定されているかチェック
-        const selectedLlmProviderForBatchId = currentLlmProviderId; // グローバル設定のプロバイダを使用
-        const isApiKeySet = !!currentApiKey;
-        if (!isApiKeySet) {
-            alertMessage('APIキーが設定されていません。「設定」からAPIキーを入力してください。', 'error');
-            return; // 処理を中断
-        }
+        const selectedProviderId = currentLlmProviderId;
+        const selectedModelId = currentLlmModelId;
 
-        // 選択されたプロバイダに有効なモデルがあるかチェック
-        const selectedProvider = LLM_PROVIDERS.find(p => p.id === selectedLlmProviderForBatchId);
-        if (!selectedProvider || !selectedProvider.models.some(m => m.enabled)) {
-            alertMessage(`選択されたプロバイダ (${selectedProvider?.name || selectedLlmProviderForBatchId}) に有効なモデルがありません。設定を確認してください。`, 'error');
+        if (!selectedProviderId || !selectedModelId) {
+            alertMessage('一括翻訳モデルが選択されていません。', 'error');
             return;
         }
+
+        const selectedProvider = LLM_PROVIDERS.find(p => p.id === selectedProviderId);
+        const selectedModel = selectedProvider?.models?.find(m => m.id === selectedModelId);
+
+        if (!selectedProvider || !selectedModel || !selectedModel.enabled) {
+            alertMessage(`選択モデルが無効です: ${selectedProvider?.name || selectedProviderId} / ${selectedModelId}`, 'error');
+            return;
+        }
+
 
         translateAllButton.disabled = true; // ボタンを無効化
         translateAllButton.querySelector('span').textContent = 'すべて翻訳中...'; // ボタンのテキストを更新
@@ -2803,7 +2907,7 @@ ${modifiedText}`;
                     try {
                         // ここで個別口調が'default'の場合、globalToneSelect.valueを渡す
                         const effectiveToneForTranslation = individualToneSelect.value === 'default' ? selectedGlobalTone : individualToneSelect.value;
-                        const result = await translateText(originalText, key, effectiveToneForTranslation, selectedLlmProviderForBatchId); // 一括翻訳で選択されたLLMプロバイダを使用
+                        const result = await translateText(originalText, key, effectiveToneForTranslation, selectedProviderId); // 一括翻訳で選択されたLLMプロバイダを使用
                         if (result.status === 'Error') {
                             translationCell.textContent = `翻訳エラー: ${result.errorMessage}`;
                         } else {
