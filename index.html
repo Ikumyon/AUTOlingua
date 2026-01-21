@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <link rel="icon" href="img/icon_logo.ico"> <!-- アプリのアイコンを追加 -->
     <meta charset="UTF-8">
@@ -14,46 +15,54 @@
     <!-- 独自のスタイルシートを読み込む -->
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="font-inter bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <!-- 画面幅いっぱいに広がるようにmax-w-4xlを削除し、w-fullを維持 -->
     <div class="bg-white p-6 rounded-xl shadow-lg w-full">
         <!-- ロゴの挿入 -->
         <div class="text-center mb-6">
-            <img src="img/autolingua_logo.webp" alt="AUTOlingua ロゴ" class="mx-auto max-h-24 object-contain cursor-pointer" id="app-logo"> <!-- ロゴにIDを追加し、カーソルをポインターに変更 -->
+            <img src="img/autolingua_logo.webp" alt="AUTOlingua ロゴ"
+                class="mx-auto max-h-24 object-contain cursor-pointer" id="app-logo"> <!-- ロゴにIDを追加し、カーソルをポインターに変更 -->
         </div>
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">ファイルをドラッグ＆ドロップして自動翻訳</h1>
 
         <!-- 設定ボタン -->
         <div class="text-right mb-4">
-            <button id="settings-button" class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300 text-sm">
+            <button id="settings-button"
+                class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300 text-sm">
                 設定
             </button>
-</div>
+        </div>
 
         <!-- ドロップゾーン -->
-        <div id="drop-zone" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 mb-6">
+        <div id="drop-zone"
+            class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 mb-6">
             <p class="text-gray-600 text-lg mb-2">ここにファイルをドラッグ＆ドロップ</p>
             <p class="text-gray-500 text-sm">またはクリックしてファイルを選択</p>
             <input type="file" id="file-input" class="hidden" accept=".yml,.yaml,.txt">
         </div>
 
         <!-- エラーメッセージ表示エリア -->
-        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+        <div id="error-message"
+            class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong class="font-bold">エラー！</strong>
             <span class="block sm:inline"></span>
         </div>
 
-        <!-- 翻訳テーブルコンテナ -->
-        <div id="table-container" class="hidden overflow-x-auto bg-gray-50 p-4 rounded-lg shadow-inner relative"> <!-- relative を追加 -->
-            <div class="flex justify-between items-center mb-4 flex-wrap gap-y-3">
+        <!-- 翻訳テーブルコンテナのラッパー -->
+        <div id="table-wrapper" class="hidden">
+            <!-- 検索・フィルターバー（固定表示） -->
+            <div
+                class="flex justify-between items-center mb-4 flex-wrap gap-y-3 sticky-filter-bar bg-gray-50 p-4 rounded-t-lg">
                 <h2 class="text-xl font-semibold text-gray-700">翻訳対象テキスト</h2>
-                
+
                 <!-- フィルター機能のUI要素を追加 -->
                 <div class="flex items-center space-x-3 flex-wrap gap-y-2">
                     <!-- ステータスフィルター -->
                     <div class="flex items-center space-x-2">
                         <label for="status-filter-select" class="text-gray-700 text-sm font-medium">ステータス:</label>
-                        <select id="status-filter-select" class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                        <select id="status-filter-select"
+                            class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
                             <option value="all">すべて</option>
                             <option value="untranslated">未翻訳</option>
                             <option value="translated">翻訳済み</option>
@@ -66,7 +75,8 @@
                     <!-- 口調フィルター -->
                     <div class="flex items-center space-x-2">
                         <label for="tone-filter-select" class="text-gray-700 text-sm font-medium">口調:</label>
-                        <select id="tone-filter-select" class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                        <select id="tone-filter-select"
+                            class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
                             <option value="all">すべて</option>
                             <option value="default">全体設定に沿う</option>
                             <!-- 口調オプションはJavaScriptで動的に生成されます -->
@@ -74,437 +84,610 @@
                     </div>
 
                     <!-- キーワード検索フィルター -->
-                     <div class="relative flex-grow min-w-[200px]">
-                        <input type="text" id="keyword-search-input" placeholder="キーワード検索" class="shadow appearance-none border rounded-lg w-full py-2 px-3 pl-8 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <div class="relative flex-grow min-w-[200px]">
+                        <input type="text" id="keyword-search-input" placeholder="キーワード検索"
+                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 pl-8 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
 
                     <div class="flex items-center ml-2">
-                        <input type="checkbox" id="regex-search-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <input type="checkbox" id="regex-search-checkbox"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="regex-search-checkbox" class="ml-2 text-gray-700 text-sm font-medium">正規表現</label>
                     </div>
                     <!-- 高度なフィルターボタン -->
-                    <button id="advanced-filter-button" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm flex items-center">
+                    <button id="advanced-filter-button"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm flex items-center">
                         <i class="fas fa-sliders-h mr-2"></i>高度なフィルター
                     </button>
 
                     <!-- フィルターリセットボタン -->
-                    <button id="reset-filters-button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition-colors duration-300 text-sm">
+                    <button id="reset-filters-button"
+                        class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition-colors duration-300 text-sm">
                         リセット
                     </button>
                 </div>
-                
+
                 <!-- 既存のコントロール -->
                 <div class="flex justify-end items-center space-x-2 w-full mt-2 md:mt-0 md:w-auto">
                     <!-- 校閲モードチェックボックスを追加 -->
                     <div class="flex items-center">
-                        <input type="checkbox" id="review-mode-checkbox" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <input type="checkbox" id="review-mode-checkbox"
+                            class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="review-mode-checkbox" class="text-gray-700 text-sm font-medium">校閲モード</label>
                     </div>
                     <label for="tone-select" class="text-gray-700 text-sm font-medium">全体口調:</label>
-                    <select id="tone-select" class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                    <select id="tone-select"
+                        class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
                         <!-- オプションはJavaScriptで動的に生成されます -->
                     </select>
                     <!-- 「すべて翻訳」ボタンの横にLLM選択ドロップダウンを追加 -->
-                    <label for="global-llm-provider-select" class="text-gray-700 text-sm font-medium ml-4">一括翻訳プロバイダ:</label>
-                    <select id="global-llm-provider-select" class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                    <label for="global-llm-provider-select"
+                        class="text-gray-700 text-sm font-medium ml-4">一括翻訳プロバイダ:</label>
+                    <select id="global-llm-provider-select"
+                        class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
                         <!-- オプションはJavaScriptで動的に生成されます -->
                     </select>
-                    <button id="translate-all-button" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-300 text-sm relative overflow-hidden">
-                        <div id="translate-all-progress-bar" class="absolute inset-0 bg-indigo-500 opacity-50 w-0 transition-all duration-100 ease-linear"></div>
+                    <button id="translate-all-button"
+                        class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-300 text-sm relative overflow-hidden">
+                        <div id="translate-all-progress-bar"
+                            class="absolute inset-0 bg-indigo-500 opacity-50 w-0 transition-all duration-100 ease-linear">
+                        </div>
                         <span class="relative z-10">すべて翻訳</span>
                     </button>
-                    <button id="cancel-translate-all-button" class="bg-red-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-red-700 transition-colors duration-300 text-sm hidden">
+                    <button id="cancel-translate-all-button"
+                        class="bg-red-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-red-700 transition-colors duration-300 text-sm hidden">
                         翻訳停止
-                    </button>                                       
-                </div>
-            </div>
-            <p id="translation-progress" class="text-center text-blue-600 font-medium mb-4 hidden">翻訳中...</p>
-            <table id="data-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
-                <thead>
-                    <tr>
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider delete-column-header">削除</th> <!-- 新しい削除列のヘッダー -->
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider string_key-column-header">キー</th>
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider original_text-column-header">原文</th>
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider translation-cell">翻訳文</th>
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider review-column-header">校閲</th> <!-- 新しい校閲列にクラスを追加 -->
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider tone-column-header">口調</th>
-                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider action-column-header">アクション</th>
-                    </tr>
-                </thead>
-            </table>
-            <div id="translated-file-download-section" class="mt-6 p-4 bg-blue-50 rounded-lg shadow-sm hidden">
-                <h3 class="text-lg font-semibold text-gray-700 mb-3">翻訳済みファイルのダウンロード</h3>
-                <div class="flex items-center space-x-4">
-                    <label for="file-prefix-select" class="text-gray-700 text-sm font-medium">ファイル先頭設定:</label>
-                    <select id="file-prefix-select" class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
-                        <option value="l_japanese:">l_japanese:</option>
-                        <option value="l_english:">l_english: (原文維持)</option>
-                    </select>
-                    <button id="download-translated-yml-button" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
-                        翻訳済みYMLダウンロード
-                    </button>
-                    <button id="download-log-button" class="bg-green-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-300 text-sm">
-                        翻訳ログダウンロード (CSV)
                     </button>
                 </div>
             </div>
 
-            <!-- 翻訳案オーバーレイ (hidden by default) -->
-            <div id="suggestions-overlay" class="absolute bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-20 hidden min-w-[300px]">
-                <div class="flex justify-between items-center mb-3 border-b pb-2">
-                    <h3 class="text-lg font-semibold text-gray-800">他の翻訳案</h3>
-                    <button id="close-suggestions-overlay-button" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+            <!-- 翻訳テーブルコンテナ（スクロール可能） -->
+            <div id="table-container" class="overflow-x-auto bg-gray-50 p-4 rounded-b-lg shadow-inner relative">
+                <!-- relative を追加 -->
+                <p id="translation-progress" class="text-center text-blue-600 font-medium mb-4 hidden">翻訳中...</p>
+                <table id="data-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
+                    <thead>
+                        <tr>
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider delete-column-header">
+                                削除<div class="resizer"></div>
+                            </th> <!-- 新しい削除列のヘッダー -->
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider string_key-column-header">
+                                キー<div class="resizer"></div>
+                            </th>
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider original_text-column-header">
+                                原文<div class="resizer"></div>
+                            </th>
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider translation-cell">
+                                翻訳文<div class="resizer"></div>
+                            </th>
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider review-column-header">
+                                校閲<div class="resizer"></div>
+                            </th> <!-- 新しい校閲列にクラスを追加 -->
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider tone-column-header">
+                                口調<div class="resizer"></div>
+                            </th>
+                            <th
+                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider action-column-header">
+                                アクション<div class="resizer"></div>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+                <div id="translated-file-download-section" class="mt-6 p-4 bg-blue-50 rounded-lg shadow-sm hidden">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">翻訳済みファイルのダウンロード</h3>
+                    <div class="flex items-center space-x-4">
+                        <label for="file-prefix-select" class="text-gray-700 text-sm font-medium">ファイル先頭設定:</label>
+                        <select id="file-prefix-select"
+                            class="block w-auto bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                            <option value="l_japanese:">l_japanese:</option>
+                            <option value="l_english:">l_english: (原文維持)</option>
+                        </select>
+                        <button id="download-translated-yml-button"
+                            class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
+                            翻訳済みYMLダウンロード
+                        </button>
+                        <button id="download-log-button"
+                            class="bg-green-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-300 text-sm">
+                            翻訳ログダウンロード (CSV)
+                        </button>
+                    </div>
                 </div>
-                <div id="suggestions-list" class="space-y-3">
-                    <!-- 翻訳案はJavaScriptでここに動的に追加されます -->
-                    <div class="text-center text-gray-500">読み込み中...</div>
+
+                <!-- 翻訳案オーバーレイ (hidden by default) -->
+                <div id="suggestions-overlay"
+                    class="absolute bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-20 hidden min-w-[300px]">
+                    <div class="flex justify-between items-center mb-3 border-b pb-2">
+                        <h3 class="text-lg font-semibold text-gray-800">他の翻訳案</h3>
+                        <button id="close-suggestions-overlay-button"
+                            class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div id="suggestions-list" class="space-y-3">
+                        <!-- 翻訳案はJavaScriptでここに動的に追加されます -->
+                        <div class="text-center text-gray-500">読み込み中...</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 設定モーダル -->
-    <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">設定</h2>
+        <!-- 設定モーダル -->
+        <div id="settings-modal"
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">設定</h2>
 
-            <div class="flex mb-6">
-                <!-- タブボタン -->
-                <div class="flex flex-col space-y-2 w-1/4 pr-4 border-r">
-                    <button id="tab1-button" class="tab-button active bg-blue-500 text-white">APIキー設定</button>
-                    <button id="tab2-button" class="tab-button">デフォルト口調設定</button>
-                    <button id="tab3-button" class="tab-button">口調カスタマイズ</button>
-                    <button id="glossary-tab-button" class="tab-button">用語集</button>
-                    <button id="modifier-tab-button" class="tab-button">修飾文字</button> <!-- 新しい修飾文字タブボタン -->
-                </div>
+                <div class="flex mb-6">
+                    <!-- タブボタン -->
+                    <div class="flex flex-col space-y-2 w-1/4 pr-4 border-r">
+                        <button id="tab1-button" class="tab-button active bg-blue-500 text-white">APIキー設定</button>
+                        <button id="tab2-button" class="tab-button">デフォルト口調設定</button>
+                        <button id="tab3-button" class="tab-button">口調カスタマイズ</button>
+                        <button id="glossary-tab-button" class="tab-button">用語集</button>
+                        <button id="modifier-tab-button" class="tab-button">修飾文字</button> <!-- 新しい修飾文字タブボタン -->
+                    </div>
 
-                <!-- タブコンテンツ -->
-                <div class="w-3/4 pl-6">
-                    <!-- APIキー設定タブ -->
-                    <div id="tab1-content" class="tab-content">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">LLM APIキー設定</h3>
-                        <p class="text-gray-600 mb-4">使用するLLMプロバイダを選択し、APIキーとパスフレーズを入力してください。</p>
+                    <!-- タブコンテンツ -->
+                    <div class="w-3/4 pl-6">
+                        <!-- APIキー設定タブ -->
+                        <div id="tab1-content" class="tab-content">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">LLM APIキー設定</h3>
+                            <p class="text-gray-600 mb-4">使用するLLMプロバイダを選択し、APIキーとパスフレーズを入力してください。</p>
 
-                        <!-- LLMプロバイダ選択ドロップダウン -->
-                        <div class="mb-4">
-                            <label for="llm-provider-select" class="block text-gray-700 text-sm font-bold mb-2">翻訳プロバイダを選択:</label>
-                            <select id="llm-provider-select" class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:shadow-outline">
-                                <!-- オプションはJavaScriptで動的に生成されます -->
-                            </select>
+                            <!-- LLMプロバイダ選択ドロップダウン -->
+                            <div class="mb-4">
+                                <label for="llm-provider-select"
+                                    class="block text-gray-700 text-sm font-bold mb-2">翻訳プロバイダを選択:</label>
+                                <select id="llm-provider-select"
+                                    class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:shadow-outline">
+                                    <!-- オプションはJavaScriptで動的に生成されます -->
+                                </select>
+                            </div>
+
+                            <!-- モデル選択チェックボックスリスト -->
+                            <div class="mb-4">
+                                <label class="block text-gray-700 text-sm font-bold mb-2">利用するモデル:</label>
+                                <div id="llm-model-checkbox-list" class="space-y-2">
+                                    <p class="text-gray-500 text-sm">モデルがありません。下の「追加」で入力してください。</p>
+                                </div>
+                                <div class="mt-3 flex items-center gap-2">
+                                    <div class="w-4"></div>
+                                    <button type="button" id="add-llm-model-button"
+                                        class="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-300 text-sm">
+                                        追加
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">各行は「チェック = 有効/無効」「テキスト = モデルID」「削除 = 行の削除」です。</p>
+                            </div>
+
+                            <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
+                                <label for="api-key-input" class="block text-gray-700 text-sm font-bold mb-2"
+                                    id="api-key-label">APIキー:</label>
+                                <input type="password" id="api-key-input"
+                                    class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="YOUR API KEY">
+                                <button type="button" id="toggle-api-key"
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-6">
+                                    <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
+                                </button>
+                            </div>
+                            <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
+                                <label for="api-passphrase-input"
+                                    class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ
+                                    (APIキーの暗号化用):</label>
+                                <input type="password" id="api-passphrase-input"
+                                    class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="APIキーを保護するパスフレーズ">
+                                <button type="button" id="toggle-api-passphrase"
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-2">
+                                    <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
+                                </button>
+                                <p class="text-xs text-gray-500 mt-1">このパスフレーズは保存されません。次回利用時に必要になります。</p>
+                            </div>
+                            <p class="text-sm text-gray-500">APIキーは暗号化され、ブラウザのIndexedDBに保存されます。</p>
+                            <div class="mt-6 pt-4 border-t flex justify-end">
+                                <button id="delete-api-key-button"
+                                    class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
+                                    APIキーを削除
+                                </button>
+                            </div>
+
+                            <!-- 既存のLLMプロバイダ管理リスト -->
+                            <div class="mt-8 pt-4 border-t border-gray-200">
+                                <h4 class="text-lg font-semibold text-gray-700 mb-3">登録済みLLMプロバイダ</h4>
+                                <ul id="llm-provider-list" class="space-y-3">
+                                    <!-- LLMプロバイダはJavaScriptでここに動的に追加されます -->
+                                    <li class="text-gray-600 text-sm text-center">APIキーが保存されているプロバイダはありません。</li>
+                                </ul>
+                            </div>
                         </div>
 
-                        <!-- モデル選択チェックボックスリスト -->
-                        <div class="mb-4">
-                            <label class="block text-gray-700 text-sm font-bold mb-2">利用するモデル:</label>
-<div id="llm-model-checkbox-list" class="space-y-2">
-  <p class="text-gray-500 text-sm">モデルがありません。下の「追加」で入力してください。</p>
-</div>
-<div class="mt-3 flex items-center gap-2">
-  <div class="w-4"></div>
-  <button type="button" id="add-llm-model-button"
-          class="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-300 text-sm">
-    追加
-  </button>
-</div>
-<p class="text-xs text-gray-500 mt-1">各行は「チェック = 有効/無効」「テキスト = モデルID」「削除 = 行の削除」です。</p>
+                        <!-- デフォルト口調設定タブ -->
+                        <div id="tab2-content" class="tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">デフォルト口調設定</h3>
+                            <p class="text-gray-600 mb-4">翻訳時にデフォルトで適用される口調を選択してください。</p>
+                            <div class="mb-4">
+                                <label for="default-tone-select"
+                                    class="block text-gray-700 text-sm font-bold mb-2">デフォルト口調:</label>
+                                <select id="default-tone-select"
+                                    class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                                    <!-- オプションはJavaScriptで動的に生成されます -->
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="api-key-input" class="block text-gray-700 text-sm font-bold mb-2" id="api-key-label">APIキー:</label>
-                            <input type="text" id="api-key-input" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="YOUR API KEY">
-                        </div>
-                        <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
-                            <label for="api-passphrase-input" class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ (APIキーの暗号化用):</label>
-                            <input type="password" id="api-passphrase-input" class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="APIキーを保護するパスフレーズ">
-                            <button type="button" id="toggle-api-passphrase" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-2">
-                                <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
-                            </button>
-                            <p class="text-xs text-gray-500 mt-1">このパスフレーズは保存されません。次回利用時に必要になります。</p>
-                        </div>
-                        <p class="text-sm text-gray-500">APIキーは暗号化され、ブラウザのIndexedDBに保存されます。</p>
-                        <div class="mt-6 pt-4 border-t flex justify-end">
-                            <button id="delete-api-key-button" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
-                                APIキーを削除
-                            </button>
-                        </div>
+                        <!-- 口調カスタマイズタブ -->
+                        <div id="tab3-content" class="tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">口調カスタマイズ</h3>
+                            <p class="text-gray-600 mb-4">新しい口調を追加したり、既存の口調を編集・削除できます。</p>
+                            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <h4 class="text-lg font-semibold text-gray-700 mb-3">新しい口調を追加 / 編集</h4>
+                                <div class="mb-3">
+                                    <label for="new-tone-name"
+                                        class="block text-gray-700 text-sm font-bold mb-2">口調名:</label>
+                                    <input type="text" id="new-tone-name"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        placeholder="例: 丁寧語、関西弁">
+                                </div>
+                                <!-- 条件付き口調のチェックボックスを追加 -->
+                                <div class="mb-3 flex items-center">
+                                    <input type="checkbox" id="conditional-tone-checkbox"
+                                        class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="conditional-tone-checkbox"
+                                        class="text-gray-700 text-sm font-bold">条件付き口調</label>
+                                </div>
 
-                        <!-- 既存のLLMプロバイダ管理リスト -->
-                        <div class="mt-8 pt-4 border-t border-gray-200">
-                            <h4 class="text-lg font-semibold text-gray-700 mb-3">登録済みLLMプロバイダ</h4>
-                            <ul id="llm-provider-list" class="space-y-3">
-                                <!-- LLMプロバイダはJavaScriptでここに動的に追加されます -->
-                                <li class="text-gray-600 text-sm text-center">APIキーが保存されているプロバイダはありません。</li>
+                                <!-- 条件付き口調のUI要素を格納するコンテナ -->
+                                <div id="conditional-tone-fields"
+                                    class="hidden border border-gray-200 rounded-lg p-4 mt-4 bg-white">
+                                    <h5 class="text-md font-semibold text-gray-700 mb-3">条件と口調の設定</h5>
+                                    <div id="conditional-tone-list" class="space-y-4">
+                                        <!-- 条件付き口調のペアがJavaScriptでここに追加されます -->
+                                    </div>
+                                    <button id="add-condition-button"
+                                        class="mt-4 bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600 transition-colors duration-300 text-sm">
+                                        更に条件追加
+                                    </button>
+
+                                    <div class="mt-6 pt-4 border-t border-gray-200">
+                                        <label for="else-tone-instruction"
+                                            class="block text-gray-700 text-sm font-bold mb-2">それら上記以外の口調:</label>
+                                        <textarea id="else-tone-instruction" rows="3"
+                                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y"
+                                            placeholder="例: デフォルトの口調"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 mt-4">
+                                    <label for="new-tone-instruction"
+                                        class="block text-gray-700 text-sm font-bold mb-2">AIへの指示文 (通常口調用):</label>
+                                    <textarea id="new-tone-instruction" rows="4"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y"
+                                        placeholder="例: 語尾は「です、ます」調にしてください。"></textarea>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="add-custom-tone-button"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
+                                        口調を追加
+                                    </button>
+                                    <button id="cancel-edit-button"
+                                        class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-700 mb-3">既存の口調</h4>
+                            <ul id="custom-tone-list" class="space-y-3">
+                                <!-- カスタム口調はJavaScriptでここに動的に追加されます -->
                             </ul>
                         </div>
-                    </div>
 
-                    <!-- デフォルト口調設定タブ -->
-                    <div id="tab2-content" class="tab-content hidden">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">デフォルト口調設定</h3>
-                        <p class="text-gray-600 mb-4">翻訳時にデフォルトで適用される口調を選択してください。</p>
-                        <div class="mb-4">
-                            <label for="default-tone-select" class="block text-gray-700 text-sm font-bold mb-2">デフォルト口調:</label>
-                            <select id="default-tone-select" class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
-                                <!-- オプションはJavaScriptで動的に生成されます -->
-                            </select>
-                        </div>
-                    </div>
+                        <!-- 用語集タブ -->
+                        <div id="glossary-tab-content" class="tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">用語集</h3>
+                            <p class="text-gray-600 mb-4">特定の単語やフレーズの翻訳ルールを設定できます。</p>
 
-                    <!-- 口調カスタマイズタブ -->
-                    <div id="tab3-content" class="tab-content hidden">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">口調カスタマイズ</h3>
-                        <p class="text-gray-600 mb-4">新しい口調を追加したり、既存の口調を編集・削除できます。</p>
-                        <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <h4 class="text-lg font-semibold text-gray-700 mb-3">新しい口調を追加 / 編集</h4>
-                            <div class="mb-3">
-                                <label for="new-tone-name" class="block text-gray-700 text-sm font-bold mb-2">口調名:</label>
-                                <input type="text" id="new-tone-name" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例: 丁寧語、関西弁">
-                            </div>
-                            <!-- 条件付き口調のチェックボックスを追加 -->
-                            <div class="mb-3 flex items-center">
-                                <input type="checkbox" id="conditional-tone-checkbox" class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <label for="conditional-tone-checkbox" class="text-gray-700 text-sm font-bold">条件付き口調</label>
-                            </div>
-
-                            <!-- 条件付き口調のUI要素を格納するコンテナ -->
-                            <div id="conditional-tone-fields" class="hidden border border-gray-200 rounded-lg p-4 mt-4 bg-white">
-                                <h5 class="text-md font-semibold text-gray-700 mb-3">条件と口調の設定</h5>
-                                <div id="conditional-tone-list" class="space-y-4">
-                                    <!-- 条件付き口調のペアがJavaScriptでここに追加されます -->
+                            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <h4 class="text-lg font-semibold text-gray-700 mb-3">用語を追加 / 編集</h4>
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <label for="glossary-pos"
+                                            class="block text-gray-700 text-sm font-bold mb-2">品詞:</label>
+                                        <select id="glossary-pos"
+                                            class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
+                                            <!-- オプションはJavaScriptで動的に生成されます -->
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="glossary-original"
+                                            class="block text-gray-700 text-sm font-bold mb-2">原文:</label>
+                                        <input type="text" id="glossary-original"
+                                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                            placeholder="例: apple">
+                                    </div>
                                 </div>
-                                <button id="add-condition-button" class="mt-4 bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-purple-600 transition-colors duration-300 text-sm">
-                                    更に条件追加
-                                </button>
-
-                                <div class="mt-6 pt-4 border-t border-gray-200">
-                                    <label for="else-tone-instruction" class="block text-gray-700 text-sm font-bold mb-2">それら上記以外の口調:</label>
-                                    <textarea id="else-tone-instruction" rows="3" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y" placeholder="例: デフォルトの口調"></textarea>
+                                <div class="mb-3">
+                                    <label for="glossary-original-alt"
+                                        class="block text-gray-700 text-sm font-bold mb-2">他形態 (改行区切り):</label>
+                                    <textarea id="glossary-original-alt" rows="2"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y"
+                                        placeholder="例: apples&#10;Apple"></textarea>
                                 </div>
-                            </div>
-
-                            <div class="mb-3 mt-4">
-                                <label for="new-tone-instruction" class="block text-gray-700 text-sm font-bold mb-2">AIへの指示文 (通常口調用):</label>
-                                <textarea id="new-tone-instruction" rows="4" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y" placeholder="例: 語尾は「です、ます」調にしてください。"></textarea>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button id="add-custom-tone-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
-                                    口調を追加
-                                </button>
-                                <button id="cancel-edit-button" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
-                                    キャンセル
-                                </button>
-                            </div>
-                        </div>
-                        <h4 class="text-lg font-semibold text-gray-700 mb-3">既存の口調</h4>
-                        <ul id="custom-tone-list" class="space-y-3">
-                            <!-- カスタム口調はJavaScriptでここに動的に追加されます -->
-                        </ul>
-                    </div>
-
-                    <!-- 用語集タブ -->
-                    <div id="glossary-tab-content" class="tab-content hidden">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">用語集</h3>
-                        <p class="text-gray-600 mb-4">特定の単語やフレーズの翻訳ルールを設定できます。</p>
-
-                        <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <h4 class="text-lg font-semibold text-gray-700 mb-3">用語を追加 / 編集</h4>
-                            <div class="grid grid-cols-2 gap-4 mb-3">
-                                <div>
-                                    <label for="glossary-pos" class="block text-gray-700 text-sm font-bold mb-2">品詞:</label>
-                                    <select id="glossary-pos" class="block w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg leading-tight focus:outline-none focus:border-blue-500">
-                                        <!-- オプションはJavaScriptで動的に生成されます -->
-                                    </select>
+                                <div class="mb-3">
+                                    <label for="glossary-translation"
+                                        class="block text-gray-700 text-sm font-bold mb-2">翻訳文:</label>
+                                    <input type="text" id="glossary-translation"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        placeholder="例: 林檎">
                                 </div>
-                                <div>
-                                    <label for="glossary-original" class="block text-gray-700 text-sm font-bold mb-2">原文:</label>
-                                    <input type="text" id="glossary-original" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例: apple">
+                                <div class="mb-3">
+                                    <label for="glossary-note" class="block text-gray-700 text-sm font-bold mb-2">ノート
+                                        (AIへの指示):</label>
+                                    <textarea id="glossary-note" rows="2"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y"
+                                        placeholder="例: 特定の文脈でのみ適用"></textarea>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="add-glossary-term-button"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
+                                        用語を追加
+                                    </button>
+                                    <button id="cancel-glossary-edit-button"
+                                        class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
+                                        キャンセル
+                                    </button>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="glossary-original-alt" class="block text-gray-700 text-sm font-bold mb-2">他形態 (改行区切り):</label>
-                                <textarea id="glossary-original-alt" rows="2" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y" placeholder="例: apples&#10;Apple"></textarea>
+
+                            <h4 class="text-lg font-semibold text-gray-700 mb-3">既存の用語</h4>
+                            <div class="mb-4">
+                                <div id="glossary-file-drop-zone"
+                                    class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50">
+                                    <p class="text-gray-600 text-sm mb-1">用語集JSONファイルをここにドラッグ＆ドロップ</p>
+                                    <p class="text-gray-500 text-xs">またはクリックしてファイルを選択</p>
+                                    <input type="file" id="glossary-file-input" class="hidden" accept=".json">
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="glossary-translation" class="block text-gray-700 text-sm font-bold mb-2">翻訳文:</label>
-                                <input type="text" id="glossary-translation" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例: 林檎">
+                            <div class="overflow-x-auto mb-4">
+                                <table id="glossary-table"
+                                    class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                品詞</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                原文</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                他形態</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                翻訳文</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                ノート</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                アクション</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="glossary-table-body">
+                                        <!-- 用語はJavaScriptでここに動的に追加されます -->
+                                        <tr>
+                                            <td colspan="6" class="py-2 px-4 text-gray-600 text-sm text-center">
+                                                用語がありません。
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="mb-3">
-                                <label for="glossary-note" class="block text-gray-700 text-sm font-bold mb-2">ノート (AIへの指示):</label>
-                                <textarea id="glossary-note" rows="2" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline resize-y" placeholder="例: 特定の文脈でのみ適用"></textarea>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button id="add-glossary-term-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
-                                    用語を追加
+                            <div class="flex justify-end space-x-3">
+                                <button id="download-glossary-button"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
+                                    用語集をダウンロード
                                 </button>
-                                <button id="cancel-glossary-edit-button" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
-                                    キャンセル
+                                <button id="clear-glossary-button"
+                                    class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
+                                    用語集を全削除
                                 </button>
                             </div>
                         </div>
 
-                        <h4 class="text-lg font-semibold text-gray-700 mb-3">既存の用語</h4>
-                        <div class="mb-4">
-                            <div id="glossary-file-drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:bg-blue-50">
-                                <p class="text-gray-600 text-sm mb-1">用語集JSONファイルをここにドラッグ＆ドロップ</p>
-                                <p class="text-gray-500 text-xs">またはクリックしてファイルを選択</p>
-                                <input type="file" id="glossary-file-input" class="hidden" accept=".json">
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto mb-4">
-                            <table id="glossary-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
-                                <thead>
-                                    <tr>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">品詞</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">原文</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">他形態</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">翻訳文</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ノート</th>
-                                        <th class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">アクション</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="glossary-table-body">
-                                    <!-- 用語はJavaScriptでここに動的に追加されます -->
-                                    <tr><td colspan="6" class="py-2 px-4 text-gray-600 text-sm text-center">用語がありません。</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="flex justify-end space-x-3">
-                            <button id="download-glossary-button" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
-                                用語集をダウンロード
-                            </button>
-                            <button id="clear-glossary-button" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
-                                用語集を全削除
-                            </button>
-                        </div>
-                    </div>
+                        <!-- 修飾文字タブ (複数対応版) -->
+                        <div id="modifier-tab-content" class="tab-content hidden">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">修飾文字設定</h3>
+                            <p class="text-gray-600 mb-4">
+                                翻訳時に特定の文字パターンを無視したり、特別に扱うための正規表現を設定します。<br>
+                                複数のパターンを登録でき、個別に有効/無効を切り替えられます。
+                            </p>
 
-                    <!-- 修飾文字タブ (新規追加) -->
-                    <div id="modifier-tab-content" class="tab-content hidden">
-                        <h3 class="text-xl font-semibold text-gray-700 mb-4">修飾文字設定</h3>
-                        <p class="text-gray-600 mb-4">
-                            翻訳時に特定の文字パターンを無視したり、特別に扱うための正規表現を設定します。
-                            例えば、ゲーム内の変数名や特殊な記号などを定義できます。
-                        </p>
+                            <!-- 修飾文字追加フォーム -->
+                            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                <h4 class="text-lg font-semibold text-gray-700 mb-3">修飾文字を追加 / 編集</h4>
+                                <div class="mb-3">
+                                    <label for="modifier-name-input"
+                                        class="block text-gray-700 text-sm font-bold mb-2">名前 (説明):</label>
+                                    <input type="text" id="modifier-name-input"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        placeholder="例: 変数名、特殊記号">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modifier-regex-input"
+                                        class="block text-gray-700 text-sm font-bold mb-2">正規表現:</label>
+                                    <input type="text" id="modifier-regex-input"
+                                        class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        placeholder="例: \[[^\]]+\]">
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        JavaScriptの正規表現ルールに従ってください。バックスラッシュは二重にエスケープが必要です。</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="add-modifier-button"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
+                                        追加
+                                    </button>
+                                    <button id="cancel-modifier-edit-button"
+                                        class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </div>
 
-                        <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <h4 class="text-lg font-semibold text-gray-700 mb-3">修飾文字の正規表現</h4>
-                            <div class="mb-3">
-                                <label for="modifier-name-input" class="block text-gray-700 text-sm font-bold mb-2">名前 (説明):</label>
-                                <input type="text" id="modifier-name-input" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例: 変数名、特殊記号">
+                            <!-- 修飾文字一覧テーブル -->
+                            <div class="overflow-x-auto mb-4">
+                                <table id="modifier-table"
+                                    class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16 text-center">
+                                                有効</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-40">
+                                                名前</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                正規表現</th>
+                                            <th
+                                                class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-24 text-center">
+                                                アクション</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modifier-table-body">
+                                        <!-- 修飾文字はJavaScriptでここに動的に追加されます -->
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="mb-3">
-                                <label for="modifier-regex-input" class="block text-gray-700 text-sm font-bold mb-2">正規表現:</label>
-                                <input type="text" id="modifier-regex-input" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例: \\s+、\\[[A-Z0-9_]+\\]">
-                                <p class="text-xs text-gray-500 mt-1">JavaScriptの正規表現ルールに従ってください。バックスラッシュは二重にエスケープが必要です。</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button id="add-modifier-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
-                                    設定を保存
-                                </button>
-                                <button id="reset-modifier-button" class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300 text-sm">
+
+                            <div class="flex justify-end space-x-3">
+                                <button id="reset-modifier-button"
+                                    class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300 text-sm">
                                     デフォルトにリセット
                                 </button>
-                                <button id="cancel-modifier-edit-button" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors duration-300 text-sm hidden">
-                                    キャンセル
+                                <button id="clear-all-modifiers-button"
+                                    class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
+                                    全削除
                                 </button>
                             </div>
                         </div>
-                    </div>
 
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                    <button id="save-settings-button"
+                        class="bg-green-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-300 text-sm">
+                        設定を保存
+                    </button>
+                    <button id="close-settings-button"
+                        class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
+                        閉じる
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
-                <button id="save-settings-button" class="bg-green-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-300 text-sm">
-                    設定を保存
-                </button>
-                <button id="close-settings-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
+        <!-- パスフレーズ入力モーダル (新規追加) -->
+        <div id="passphrase-modal"
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">APIキーを復号化</h2>
+                <p class="text-gray-600 mb-4">保存されたAPIキーを読み込むにはパスフレーズを入力してください。</p>
+                <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
+                    <label for="passphrase-input-for-decrypt"
+                        class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ:</label>
+                    <input type="password" id="passphrase-input-for-decrypt"
+                        class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="APIキーを保護するパスフレーズ">
+                    <button type="button" id="toggle-decrypt-passphrase"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-6">
+                        <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
+                    </button>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="submit-passphrase-button"
+                        class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
+                        復号化して読み込む
+                    </button>
+                    <!-- APIキー削除ボタンをここに追加 -->
+                    <button id="delete-api-key-from-decrypt-button"
+                        class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
+                        APIキーを削除
+                    </button>
+                    <button id="cancel-passphrase-button"
+                        class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
+                        キャンセル
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 作者情報モーダル -->
+        <div id="about-modal"
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">AUTOlinguaについて</h2>
+
+                <div class="mb-6">
+                    <img src="img/ikumyon_icon.webp" alt="Ikumyonのアイコン"
+                        class="mx-auto rounded-full w-24 h-24 object-cover mb-4">
+                    <p class="text-xl font-semibold text-gray-700 mb-2">開発者: Ikumyon</p>
+                    <p class="text-gray-600 mb-4">AIをつかえば翻訳作業も簡単</p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <a href="https://x.com/Ikumyon_" target="_blank"
+                        class="block bg-blue-400 text-white py-3 rounded-lg shadow-md hover:bg-blue-500 transition-colors duration-300">
+                        <i class="fa-brands fa-x-twitter" alt="Xアイコン"></i> X (旧Twitter)
+                    </a>
+                    <a href="https://www.youtube.com/@Ikumyon_media" target="_blank"
+                        class="block bg-red-500 text-white py-3 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300">
+                        <i class="fa-brands fa-youtube" alt="YouTubeアイコン"></i> YouTube
+                    </a>
+                    <a href="https://steamcommunity.com/id/ikumyon/" target="_blank"
+                        class="block bg-gray-700 text-white py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-300">
+                        <i class="fa-brands fa-steam" alt="Steamアイコン"></i> Steam
+                    </a>
+                </div>
+
+                <button id="close-about-button"
+                    class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
                     閉じる
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- パスフレーズ入力モーダル (新規追加) -->
-    <div id="passphrase-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">APIキーを復号化</h2>
-            <p class="text-gray-600 mb-4">保存されたAPIキーを読み込むにはパスフレーズを入力してください。</p>
-            <div class="mb-4 relative"> <!-- relativeを追加して目のアイコンを配置 -->
-                <label for="passphrase-input-for-decrypt" class="block text-gray-700 text-sm font-bold mb-2">パスフレーズ:</label>
-                <input type="password" id="passphrase-input-for-decrypt" class="shadow appearance-none border rounded-lg w-full py-2 pr-10 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="APIキーを保護するパスフレーズ">
-                <button type="button" id="toggle-decrypt-passphrase" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-600 top-6">
-                    <i class="fas fa-eye"></i> <!-- Font Awesomeの目のアイコン -->
-                </button>
-            </div>
-            <div class="flex justify-end space-x-3">
-                <button id="submit-passphrase-button" class="bg-blue-500 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 text-sm">
-                    復号化して読み込む
-                </button>
-                <!-- APIキー削除ボタンをここに追加 -->
-                <button id="delete-api-key-from-decrypt-button" class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300 text-sm">
-                    APIキーを削除
-                </button>
-                <button id="cancel-passphrase-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
-                    キャンセル
-                </button>
+        <!-- 高度なフィルター -->
+        <div id="advanced-filter-modal"
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <h2 class="text-2xl font-bold text-gray-800">高度なフィルター</h2>
+                    <button id="close-advanced-filter-modal-button"
+                        class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+                </div>
+                <div id="filter-canvas" class="flex-grow overflow-y-auto p-4 bg-gray-50 rounded-lg">
+                    <!-- Filter blocks will be generated here by JavaScript -->
+                </div>
+                <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
+                    <button id="cancel-advanced-filter-button"
+                        class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
+                        キャンセル
+                    </button>
+                    <button id="apply-advanced-filter-button"
+                        class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
+                        フィルターを適用
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- 作者情報モーダル -->
-    <div id="about-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto text-center">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">AUTOlinguaについて</h2>
-
-            <div class="mb-6">
-                <img src="img/ikumyon_icon.webp" alt="Ikumyonのアイコン" class="mx-auto rounded-full w-24 h-24 object-cover mb-4">
-                <p class="text-xl font-semibold text-gray-700 mb-2">開発者: Ikumyon</p>
-                <p class="text-gray-600 mb-4">AIをつかえば翻訳作業も簡単</p>
-            </div>
-
-            <div class="space-y-4 mb-6">
-                <a href="https://x.com/Ikumyon_" target="_blank" class="block bg-blue-400 text-white py-3 rounded-lg shadow-md hover:bg-blue-500 transition-colors duration-300">
-                    <i class="fa-brands fa-x-twitter" alt="Xアイコン"></i> X (旧Twitter)
-                </a>
-                <a href="https://www.youtube.com/@Ikumyon_media" target="_blank" class="block bg-red-500 text-white py-3 rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300">
-                    <i class="fa-brands fa-youtube" alt="YouTubeアイコン"></i> YouTube
-                </a>
-                <a href="https://steamcommunity.com/id/ikumyon/" target="_blank" class="block bg-gray-700 text-white py-3 rounded-lg shadow-md hover:bg-gray-800 transition-colors duration-300">
-                    <i class="fa-brands fa-steam" alt="Steamアイコン"></i> Steam
-                </a>
-            </div>
-
-            <button id="close-about-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
-                    閉じる
-            </button>
-        </div>
-    </div>
-    <!-- 高度なフィルター -->
-    <div id="advanced-filter-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-                <h2 class="text-2xl font-bold text-gray-800">高度なフィルター</h2>
-                <button id="close-advanced-filter-modal-button" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
-            </div>
-            <div id="filter-canvas" class="flex-grow overflow-y-auto p-4 bg-gray-50 rounded-lg">
-                <!-- Filter blocks will be generated here by JavaScript -->
-            </div>
-            <div class="mt-6 pt-4 border-t flex justify-end space-x-3">
-                <button id="cancel-advanced-filter-button" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-md hover:bg-gray-400 transition-colors duration-300 text-sm">
-                    キャンセル
-                </button>
-                <button id="apply-advanced-filter-button" class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 text-sm">
-                    フィルターを適用
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="./js/llmService.js"></script>
-    <script type="module" src="./js/tableFilter.js"></script>
-    <script type="module" src="./js/queryParser.js"></script> <script type="module" src="./js/tableFilter.js"></script>
-    <script type="module" src="./script.js"></script>
+        <script type="module" src="./script.js"></script>
 </body>
+
 </html>

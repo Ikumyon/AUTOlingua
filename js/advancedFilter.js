@@ -77,7 +77,7 @@ export function initializeAdvancedFilter({
                 <div class="flex items-center justify-between p-2 bg-gray-200 rounded-t-md">
                     <div class="flex items-center">
                         <i class="fas fa-grip-vertical drag-handle text-gray-400 mr-2"></i>
-                        <select class="logic-operator bg-gray-200 font-semibold text-gray-700 border-none focus:ring-0 text-sm">
+                        <select class="logic-operator bg-white border border-gray-300 rounded px-2 py-1 text-sm">
                             <option value="AND" ${logic === 'AND' ? 'selected' : ''}>すべての条件を満たす (AND)</option>
                             <option value="OR" ${logic === 'OR' ? 'selected' : ''}>いずれかの条件を満たす (OR)</option>
                         </select>
@@ -266,7 +266,7 @@ export function initializeAdvancedFilter({
         if (node.type === 'NOT') {
             // NOTノードはUI要素にはならず、子要素にisNotフラグを渡す
             if (node.value.type === 'TAG' || node.value.type === 'DEFAULT') {
-                 addConditionBlock(parentElement, { ...node.value, isNot: true });
+                addConditionBlock(parentElement, { ...node.value, isNot: true });
             } else {
                 // NOT (A AND B)のような複雑なケースはここでは単純化し、未対応とする
                 console.warn("UI reconstruction for complex NOT statements is not fully supported.");
@@ -278,9 +278,9 @@ export function initializeAdvancedFilter({
         if (node.type === 'AND' || node.type === 'OR') {
             const logicBlock = createLogicBlock(node.type);
             const logicBody = logicBlock.querySelector('.logic-block-body');
-            
+
             const flatten = (n, type) => {
-                if(n.type === type) {
+                if (n.type === type) {
                     return [...flatten(n.left, type), ...flatten(n.right, type)];
                 }
                 return [n];
@@ -302,15 +302,15 @@ export function initializeAdvancedFilter({
     const generateQueryFromUI = () => {
         const rootBlock = canvasElement.querySelector('.is-root');
         if (!rootBlock) return '';
-        
+
         const parseBlock = (element) => {
             const type = element.dataset.type;
             if (type === 'logic') {
                 const operator = element.querySelector('.logic-operator').value === 'AND' ? ' ' : ' | ';
                 const children = Array.from(element.querySelector('.logic-block-body').children)
-                                    .filter(child => child.classList.contains('filter-block'))
-                                    .map(parseBlock)
-                                    .filter(q => q);
+                    .filter(child => child.classList.contains('filter-block'))
+                    .map(parseBlock)
+                    .filter(q => q);
                 if (children.length === 0) return '';
                 if (children.length === 1) return children[0];
                 return `(${children.join(operator).trim()})`;
@@ -336,7 +336,7 @@ export function initializeAdvancedFilter({
                     if (/\s/.test(value) && !value.startsWith('"')) {
                         value = `"${value}"`;
                     }
-                    
+
                     if (['status', 'reviewed', 'tone'].includes(key) || operator === 'is') {
                         tag = `${key}:${value}`;
                     } else {
@@ -354,7 +354,7 @@ export function initializeAdvancedFilter({
         }
         return query;
     };
-    
+
     /**
      * 検索タグ文字列からフィルターUIを再構築する
      * @param {string} query - 検索タグ文字列
@@ -515,12 +515,12 @@ export function initializeAdvancedFilter({
     function handleDrop(e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // プレースホルダーの位置にドラッグした要素を挿入
         if (placeholder && placeholder.parentNode && draggedElement) {
             placeholder.parentNode.replaceChild(draggedElement, placeholder);
         }
-        
+
         // 後片付け
         placeholder?.remove();
         placeholder = null;

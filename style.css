@@ -5,18 +5,53 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
+/* すべてのボタンに統一されたアクティブ状態を適用 */
+button:not(.tab-button):active {
+    transform: translateY(0) scale(0.98) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+button {
+    transition: all 0.15s ease;
+}
+
 /* ドラッグ＆ドロップエリアのホバー時のスタイルをTailwindで制御するため、ここでは特に記述なし */
 /* Tailwind CSSのクラスでほとんどのスタイルを適用しています */
 
 /* テーブルの基本的なスタイル */
 #data-table {
-    min-width: max-content; /* ←これが決定打 */
+    min-width: max-content;
+    border-collapse: collapse;
+}
+
+#data-table th {
+    position: relative;
+    /* リサイズハンドルの基準 */
+}
+
+/* リサイズハンドルのスタイル */
+.resizer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    cursor: col-resize;
+    user-select: none;
+    height: 100%;
+    z-index: 10;
+}
+
+.resizer:hover,
+.resizing .resizer {
+    border-right: 2px solid #3b82f6;
+    /* blue-500 */
 }
 
 
 #data-table th,
 #data-table td {
-    border: 1px solid #e5e7eb; /* すべてのセルにボーダーを追加 */
+    border: 1px solid #e5e7eb;
+    /* すべてのセルにボーダーを追加 */
     padding: 12px 16px;
     text-align: left;
     /*word-break: break-word; /* 長い単語でも強制的に改行 */
@@ -24,170 +59,223 @@ body {
 
 /* アクション列のボタンのスタイル */
 #data-table .translate-button {
-    background-color: #4f46e5; /* indigo-600 */
+    background-color: #4f46e5;
+    /* indigo-600 */
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
-    font-size: 0.875rem; /* text-sm */
+    font-size: 0.875rem;
+    /* text-sm */
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #data-table .translate-button:hover {
-    background-color: #4338ca; /* indigo-700 */
+    background-color: #4338ca;
+    /* indigo-700 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#data-table .translate-button:active {
+    background-color: #3730a3;
+    /* indigo-800 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.98);
 }
 
 /* 個別の口調設定ドロップダウンのスタイル */
 #data-table .individual-tone-select {
     display: block;
-    width: 100%; /* 親要素の幅いっぱいに広がる */
+    width: 100%;
+    /* 親要素の幅いっぱいに広がる */
     background-color: #ffffff;
-    border: 1px solid #d1d5db; /* gray-300 */
-    color: #374151; /* gray-700 */
+    border: 1px solid #d1d5db;
+    /* gray-300 */
+    color: #374151;
+    /* gray-700 */
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 0.875rem;
     line-height: 1.25;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    -webkit-appearance: none; /* Safari/Chrome */
-    -moz-appearance: none;    /* Firefox */
-    appearance: none;         /* 標準 */
+    -webkit-appearance: none;
+    /* Safari/Chrome */
+    -moz-appearance: none;
+    /* Firefox */
+    appearance: none;
+    /* 標準 */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z' clip-rule='evenodd'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.5rem center;
     background-size: 1.5em;
-    padding-right: 2.5rem; /* 矢印のスペースを確保 */
+    padding-right: 2.5rem;
+    /* 矢印のスペースを確保 */
 }
 
 #data-table .individual-tone-select:focus {
     outline: none;
-    border-color: #3b82f6; /* blue-500 */
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+    border-color: #3b82f6;
+    /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    /* blue-500 with opacity */
 }
+
+/* キー列のスタイル */
+#data-table th.string_key-column-header {
+    min-width: 10px;
+}
+
+#data-table td.string_key-column-header {
+    word-wrap: break-word;
+}
+
 /* 1番目はありません。一番長いキーに自動調整
 /* 原文列のスタイル (2番目の列) */
 #data-table th.original_text-column-header {
-    width: 250px; /* 原文列の幅を固定 */
+    min-width: 10px;
 }
+
 #data-table td.original_text-column-header {
-    word-wrap: break-word; /* 単語の途中で改行を許可 */
+    word-wrap: break-word;
 }
 
 /* 翻訳セルの幅を広げる */
 #data-table th.translation-cell {
-    min-width: 450px; /* 翻訳セルの最小幅を大きく設定 */
-    width: 450px; /* 翻訳セルの幅を固定 */
+    min-width: 10px;
 }
+
 #data-table td.translation-cell {
-    cursor: pointer; /* クリック可能であることを示す */
-    transition: background-color 0.2s ease; /* ホバー時のトランジション */
-    word-wrap: break-word; /* 長い単語でも強制的に改行 */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    word-wrap: break-word;
 }
 
 /* 翻訳セルにホバーしたときのスタイル */
 #data-table .translation-cell:hover {
-    background-color: #f0f9ff; /* blue-50 */
+    background-color: #f0f9ff;
 }
 
 /* 校閲列のスタイル (4番目の列) */
 #data-table th.review-column-header {
-    width: 70px; /* 校閲チェックボックスが収まる幅 */
+    min-width: 10px;
 }
+
 #data-table td.review-column-cell {
-    text-align: center; /* チェックボックスを中央寄せ */
+    text-align: center;
 }
 
 /* 校閲チェックボックスのデフォルト非表示 */
 .review-checkbox {
-    display: none; /* チェックボックス自体をデフォルトで非表示にする */
+    display: none;
 }
 
 /* JavaScriptで hidden クラスが削除されたときに表示される */
 .review-checkbox:not(.hidden) {
-    display: inline-block; /* または block, flex など適切な表示形式 */
+    display: inline-block;
 }
 
 
 /* 口調列のスタイル (5番目の列) */
 #data-table th.tone-column-header {
-    width: 180px; /* 口調選択ドロップダウンが収まる幅 */
+    min-width: 10px;
 }
+
 #data-table td.tone-column-header {
-    min-width: 150px; /* 口調選択ドロップダウンが収まる最小幅 */
+    min-width: 10px;
 }
 
 /* アクション列のスタイル (6番目の列) */
-/* アクション列：中身を必ず1行に収める */
 #data-table th.action-column-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-
-    white-space: nowrap;   /* ← 改行させない */
-    flex-wrap: nowrap;     /* ← 折り返さない */
+    min-width: 10px;
+    text-align: center;
 }
 
 #data-table td.action-column-header {
-    text-align: center; /* ボタンを中央寄せ */
+    text-align: center;
+    white-space: nowrap;
 }
 
 /* 新しい削除列のスタイル */
 #data-table th.delete-column-header {
-    width: 60px; /* 削除ボタンが収まる幅 */
+    min-width: 10px;
     text-align: center;
 }
 
 #data-table td.delete-column-cell {
-    text-align: center; /* 削除ボタンを中央寄せ */
+    text-align: center;
 }
 
 /* 削除ボタンのスタイル */
 .delete-row-button {
-    background-color: #ef4444; /* red-500 */
+    background-color: #ef4444;
+    /* red-500 */
     color: white;
     padding: 6px 10px;
     border-radius: 6px;
-    font-size: 0.875rem; /* text-sm */
+    font-size: 0.875rem;
+    /* text-sm */
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: inline-flex; /* アイコンとテキストを中央揃えにするため */
+    transition: all 0.15s ease;
+    display: inline-flex;
+    /* アイコンとテキストを中央揃えにするため */
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .delete-row-button:hover {
-    background-color: #dc2626; /* red-600 */
+    background-color: #dc2626;
+    /* red-600 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.delete-row-button:active {
+    background-color: #b91c1c;
+    /* red-700 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.98);
 }
 
 
 /* 全体口調設定ドロップダウンの幅を調整 */
 #tone-select {
-    min-width: 150px; /* 最小幅を設定して文字が見切れないようにする */
-    width: auto; /* コンテンツに合わせて自動調整を試みる */
+    min-width: 150px;
+    /* 最小幅を設定して文字が見切れないようにする */
+    width: auto;
+    /* コンテンツに合わせて自動調整を試みる */
 }
 
 /* 設定モーダルのタブスタイル */
 .tab-button {
-    width: 100%; /* 親要素の幅いっぱいに広がる */
-    white-space: normal; /* テキストの改行を許可 */
-    background-color: #f3f4f6; /* gray-100 */
-    color: #4b5563; /* gray-700 */
+    width: 100%;
+    /* 親要素の幅いっぱいに広がる */
+    white-space: normal;
+    /* テキストの改行を許可 */
+    background-color: #f3f4f6;
+    /* gray-100 */
+    color: #4b5563;
+    /* gray-700 */
     padding: 10px 16px;
     border-radius: 8px;
     text-align: left;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
-    border: none; /* デフォルトのボタンボーダーを削除 */
+    border: none;
+    /* デフォルトのボタンボーダーを削除 */
 }
 
 .tab-button:hover {
-    background-color: #e5e7eb; /* gray-200 */
+    background-color: #e5e7eb;
+    /* gray-200 */
 }
 
 .tab-button.active {
-    background-color: #3b82f6; /* blue-500 */
+    background-color: #3b82f6;
+    /* blue-500 */
     color: white;
     font-weight: 600;
 }
@@ -202,148 +290,247 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background-color: #f9fafb; /* gray-50 */
-    border: 1px solid #e5e7eb; /* gray-200 */
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
     border-radius: 6px;
 }
 
 .custom-tone-item .tone-name {
     font-weight: 500;
-    color: #374151; /* gray-700 */
+    color: #374151;
+    /* gray-700 */
 }
 
 .custom-tone-item .button-group {
     display: flex;
-    gap: 8px; /* ボタン間のスペース */
+    gap: 8px;
+    /* ボタン間のスペース */
 }
 
 .custom-tone-item .edit-tone-button {
-    background-color: #10b981; /* green-500 */
+    background-color: #10b981;
+    /* green-500 */
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
-    font-size: 0.75rem; /* text-xs */
+    font-size: 0.75rem;
+    /* text-xs */
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .custom-tone-item .edit-tone-button:hover {
-    background-color: #059669; /* green-600 */
+    background-color: #059669;
+    /* green-600 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.custom-tone-item .edit-tone-button:active {
+    background-color: #047857;
+    /* green-700 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.97);
 }
 
 .custom-tone-item .delete-tone-button {
-    background-color: #ef4444; /* red-500 */
+    background-color: #ef4444;
+    /* red-500 */
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
-    font-size: 0.75rem; /* text-xs */
+    font-size: 0.75rem;
+    /* text-xs */
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .custom-tone-item .delete-tone-button:hover {
-    background-color: #dc2626; /* red-600 */
+    background-color: #dc2626;
+    /* red-600 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.custom-tone-item .delete-tone-button:active {
+    background-color: #b91c1c;
+    /* red-700 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.97);
 }
 
 /* 用語集テーブルのスタイル */
 #glossary-table th,
 #glossary-table td,
-#modifier-table th, /* 修飾文字テーブルにも適用 */
-#modifier-table td { /* 修飾文字テーブルにも適用 */
+#modifier-table th,
+/* 修飾文字テーブルにも適用 */
+#modifier-table td {
+    /* 修飾文字テーブルにも適用 */
     padding: 8px 12px;
     text-align: left;
-    border-bottom: 1px solid #e5e7eb; /* gray-200 */
-    border-right: 1px solid #e5e7eb; /* gray-200 */
-    white-space: normal; /* 用語集のセルは改行を許可 */
-    word-break: break-word; /* 長い単語でも強制的に改行 */
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-right: 1px solid #e5e7eb;
+    /* gray-200 */
+    white-space: normal;
+    /* 用語集のセルは改行を許可 */
+    word-break: break-word;
+    /* 長い単語でも強制的に改行 */
 }
 
 #glossary-table th,
-#modifier-table th { /* 修飾文字テーブルにも適用 */
-    background-color: #f9fafb; /* gray-50 */
+#modifier-table th {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #f9fafb;
+    /* gray-50 */
     font-weight: 600;
-    color: #374151; /* gray-700 */
+    color: #374151;
+    /* gray-700 */
     text-transform: uppercase;
-    font-size: 0.75rem; /* text-xs */
+    font-size: 0.75rem;
+    /* text-xs */
     letter-spacing: 0.05em;
 }
 
 #glossary-table td:last-child,
 #glossary-table th:last-child,
-#modifier-table td:last-child, /* 修飾文字テーブルにも適用 */
-#modifier-table th:last-child { /* 修飾文字テーブルにも適用 */
-    border-right: none; /* 最後の列の右側ボーダーを削除 */
+#modifier-table td:last-child,
+/* 修飾文字テーブルにも適用 */
+#modifier-table th:last-child {
+    /* 修飾文字テーブルにも適用 */
+    border-right: none;
+    /* 最後の列の右側ボーダーを削除 */
 }
 
 #glossary-table .glossary-button-group,
-#modifier-table .modifier-button-group { /* 修飾文字テーブルにも適用 */
+#modifier-table .modifier-button-group {
+    /* 修飾文字テーブルにも適用 */
     display: flex;
-    gap: 4px; /* ボタン間のスペース */
-    justify-content: center; /* ボタンを中央寄せ */
-    flex-wrap: wrap; /* ボタンが複数行になっても対応 */
+    gap: 4px;
+    /* ボタン間のスペース */
+    justify-content: center;
+    /* ボタンを中央寄せ */
+    flex-wrap: wrap;
+    /* ボタンが複数行になっても対応 */
 }
 
 #glossary-table .edit-glossary-button,
 #glossary-table .delete-glossary-button,
-#modifier-table .edit-modifier-button, /* 修飾文字テーブルにも適用 */
-#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
+#modifier-table .edit-modifier-button,
+/* 修飾文字テーブルにも適用 */
+#modifier-table .delete-modifier-button {
+    /* 修飾文字テーブルにも適用 */
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 #glossary-table .edit-glossary-button,
-#modifier-table .edit-modifier-button { /* 修飾文字テーブルにも適用 */
-    background-color: #10b981; /* green-500 */
+#modifier-table .edit-modifier-button {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #10b981;
+    /* green-500 */
     color: white;
 }
 
 #glossary-table .edit-glossary-button:hover,
-#modifier-table .edit-modifier-button:hover { /* 修飾文字テーブルにも適用 */
-    background-color: #059669; /* green-600 */
+#modifier-table .edit-modifier-button:hover {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #059669;
+    /* green-600 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#glossary-table .edit-glossary-button:active,
+#modifier-table .edit-modifier-button:active {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #047857;
+    /* green-700 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.97);
 }
 
 #glossary-table .delete-glossary-button,
-#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
-    background-color: #ef4444; /* red-500 */
+#modifier-table .delete-modifier-button {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #ef4444;
+    /* red-500 */
     color: white;
 }
 
 #glossary-table .delete-glossary-button:hover,
-#modifier-table .delete-modifier-button { /* 修飾文字テーブルにも適用 */
-    background-color: #dc2626; /* red-600 */
+#modifier-table .delete-modifier-button:hover {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #dc2626;
+    /* red-600 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#glossary-table .delete-glossary-button:active,
+#modifier-table .delete-modifier-button:active {
+    /* 修飾文字テーブルにも適用 */
+    background-color: #b91c1c;
+    /* red-700 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translateY(0) scale(0.97);
 }
 
 /* 用語集ファイルドロップゾーンのスタイル */
 #glossary-file-drop-zone {
-    border-4 border-dashed border-gray-300 rounded-xl p-8 text-center cursor: pointer; transition-all duration-300 hover:border-blue-500 hover:bg-blue-50;
+    border: 4px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#glossary-file-drop-zone:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
 }
 
 /* ファイル先頭設定ドロップダウンの矢印位置調整 */
 #file-prefix-select {
-    background-position: right 0.75rem center; /* 矢印を垂直方向中央に調整 */
+    background-position: right 0.75rem center;
+    /* 矢印を垂直方向中央に調整 */
 }
 
 /* 品詞ドロップダウンの矢印位置調整 */
 #glossary-pos {
-    background-position: right 0.75rem center; /* 矢印を垂直方向中央に調整 */
+    background-position: right 0.75rem center;
+    /* 矢印を垂直方向中央に調整 */
 }
 
 /* 用語集テーブルの他形態セルに改行を適用 */
 #glossary-table .glossary-original-alt-cell {
-    white-space: pre-wrap; /* 改行を保持して表示 */
+    white-space: pre-wrap;
+    /* 改行を保持して表示 */
 }
 
 /* カスタムアラートメッセージのスタイル */
 .custom-alert {
-    animation: fadeOut 0.5s ease-out 2.5s forwards; /* 2.5秒後にフェードアウト開始 */
+    animation: fadeOut 0.5s ease-out 2.5s forwards;
+    /* 2.5秒後にフェードアウト開始 */
 }
 
 @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 /* 翻訳案オーバーレイのスタイル */
@@ -352,20 +539,26 @@ body {
     /* top, left, width は JS で設定 */
     /* min-w-[300px] は Tailwind で設定済み */
     /* z-index は Tailwind で設定済み */
-    box-sizing: border-box; /* パディングとボーダーを幅に含める */
-    max-height: 400px; /* 最大高さを設定してスクロール可能にする */
-    overflow-y: auto; /* 内容がはみ出たらスクロール */
+    box-sizing: border-box;
+    /* パディングとボーダーを幅に含める */
+    max-height: 400px;
+    /* 最大高さを設定してスクロール可能にする */
+    overflow-y: auto;
+    /* 内容がはみ出たらスクロール */
 }
 
 /* 他の提案ボタンのアイコン */
 .get-suggestions-button i {
-    font-size: 1.2em; /* アイコンサイズを調整 */
-    vertical-align: middle; /* 垂直方向の中央揃え */
+    font-size: 1.2em;
+    /* アイコンサイズを調整 */
+    vertical-align: middle;
+    /* 垂直方向の中央揃え */
 }
 
 /* コピーアイコンのスタイル */
 .copy-suggestion-button i {
-    font-size: 1.1em; /* アイコンサイズを調整 */
+    font-size: 1.1em;
+    /* アイコンサイズを調整 */
 }
 
 /* LLMプロバイダリストのスタイル */
@@ -374,32 +567,58 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background-color: #f9fafb; /* gray-50 */
-    border: 1px solid #e5e7eb; /* gray-200 */
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
     border-radius: 6px;
 }
 
 .llm-provider-item .button-group {
     display: flex;
-    gap: 8px; /* ボタン間のスペース */
+    gap: 8px;
+    /* ボタン間のスペース */
 }
+
 /* 無効な正規表現が入力された際の入力ボックスのスタイル */
 .invalid-regex {
-    border-color: #ef4444 !important; /* Tailwindのred-500 */
+    border-color: #ef4444 !important;
+    /* Tailwindのred-500 */
     box-shadow: 0 0 0 1px #ef4444;
 }
 
-.highlight { /*ハイライト */
-    background-color: #fef08a; /* Tailwindのyellow-200 */
+/* 検索・フィルターバーのスティッキースタイル */
+.sticky-filter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: #f9fafb;
+    /* gray-50 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease;
+}
+
+/* スクロール中の影を強調 */
+.sticky-filter-bar.is-stuck {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.highlight {
+    /*ハイライト */
+    background-color: #fef08a;
+    /* Tailwindのyellow-200 */
     padding: 0 2px;
     border-radius: 3px;
-    color: inherit; /* 親要素の文字色を継承 */
+    color: inherit;
+    /* 親要素の文字色を継承 */
 }
 
 /* --- ここから高度なフィルター機能のスタイル --- */
 .filter-block {
-    position: relative; /* ★修正点: ドラッグハンドルの絶対位置指定の基準にする */
-    padding-left: 24px; /* Space for guideline and indentation */
+    position: relative;
+    /* ★修正点: ドラッグハンドルの絶対位置指定の基準にする */
+    padding-left: 24px;
+    /* Space for guideline and indentation */
     margin-bottom: 12px;
 }
 
@@ -414,8 +633,10 @@ body {
 /* ドラッグ中のブロックのスタイル */
 .filter-block.is-dragging {
     opacity: 0.5;
-    background: #e0e7ff; /* A light blue to indicate dragging */
-    z-index: 10; /* ★追加: 他の要素の上に表示されるようにする */
+    background: #e0e7ff;
+    /* A light blue to indicate dragging */
+    z-index: 10;
+    /* ★追加: 他の要素の上に表示されるようにする */
 }
 
 /* ドラッグハンドルのアイコンのスタイル */
@@ -427,8 +648,10 @@ body {
     cursor: grab;
     color: #9ca3af;
     padding: 4px;
-    z-index: 5; /* ★追加: 他の要素より手前に表示 */
+    z-index: 5;
+    /* ★追加: 他の要素より手前に表示 */
 }
+
 .filter-block .drag-handle:active {
     cursor: grabbing;
 }
@@ -454,28 +677,31 @@ body {
 }
 
 /* トップレベルのルートブロックのガイドラインを非表示 */
-.filter-block.is-root > .guideline,
-.filter-block.is-root > .guideline-connector {
+.filter-block.is-root>.guideline,
+.filter-block.is-root>.guideline-connector {
     display: none;
 }
+
 /* グループ内の最後のブロックのガイドラインを短くする */
-.filter-block:last-child > .guideline {
+.filter-block:last-child>.guideline {
     height: 50%;
 }
 
 /* ロジックブロック（AND/ORコンテナ）のスタイル */
-.logic-block > .filter-block-content {
-    background-color: #f3f4f6; /* gray-100 */
+.logic-block>.filter-block-content {
+    background-color: #f3f4f6;
+    /* gray-100 */
 }
 
 /* ドロップ可能な場所を示すプレースホルダーのスタイル */
 .drop-placeholder {
     border: 2px dashed #3b82f6;
     border-radius: 8px;
-    height: 44px;          /* 掴みやすさ */
+    height: 44px;
+    /* 掴みやすさ */
     margin: 6px 0;
     background: rgba(59, 130, 246, 0.06);
 
-    pointer-events: none;  /* ←これが超重要：破線が当たり判定を奪わない */
+    pointer-events: none;
+    /* ←これが超重要：破線が当たり判定を奪わない */
 }
-

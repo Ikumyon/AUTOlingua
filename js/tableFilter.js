@@ -1,9 +1,9 @@
 // js/tableFilter.js
 import { tokenize, parse } from './queryParser.js';
 /**
- * Initializes the table filtering functionality.
- * @param {HTMLElement} dataTable - The main data table element.
- * @returns {object} An object with public methods to control the filter.
+ * テーブルフィルタリング機能を初期化します。
+ * @param {HTMLElement} dataTable - メインデータテーブル要素。
+ * @returns {object} フィルタを制御するパブリックメソッドを持つオブジェクト。
  */
 export const escapeHTML = (str) => {
     if (typeof str !== 'string') return '';
@@ -12,7 +12,7 @@ export const escapeHTML = (str) => {
     return div.innerHTML;
 };
 export const initializeTableFilters = (dataTable) => {
-    // DOM Elements
+    // DOM要素
     const statusFilterSelect = document.getElementById('status-filter-select');
     const toneFilterSelect = document.getElementById('tone-filter-select');
     const keywordSearchInput = document.getElementById('keyword-search-input');
@@ -21,7 +21,7 @@ export const initializeTableFilters = (dataTable) => {
 
     let allTableRows = [];
 
-    // --- Public Methods ---
+    // --- パブリックメソッド ---
 
     const updateAllTableRows = () => {
         allTableRows = Array.from(dataTable.querySelectorAll('tbody tr'));
@@ -51,23 +51,23 @@ export const initializeTableFilters = (dataTable) => {
                 const tokens = tokenize(query);
                 ast = parse(tokens);
             } catch (e) {
-                console.error("Query parse error:", e);
+                console.error("クエリの解析エラー:", e);
                 isQueryValid = false;
                 keywordSearchInput.classList.add('invalid-regex');
             }
         }
-        
+
         if (isQueryValid) {
             keywordSearchInput.classList.remove('invalid-regex');
         }
 
         allTableRows.forEach(row => {
             // 既存のハイライトを削除
-            removeHighlights(row); //
+            removeHighlights(row);
 
             let matches = true;
 
-            // 1. Check simple filters first
+            // 1. 最初に単純なフィルターをチェック
             if (currentStatusFilter !== 'all') {
                 if (!checkStatusFilter(row, currentStatusFilter)) matches = false;
             }
@@ -75,7 +75,7 @@ export const initializeTableFilters = (dataTable) => {
                 if (!checkToneFilter(row, currentToneFilter)) matches = false;
             }
 
-            // 2. If still matching, check advanced query
+            // 2. まだマッチしている場合、高度なクエリをチェック
             if (matches && ast) {
                 const highlightMatches = []; // ハイライト情報を収集するための配列
                 if (!evaluate(ast, row, useRegex, highlightMatches)) { // highlightMatches配列を渡す
@@ -93,14 +93,14 @@ export const initializeTableFilters = (dataTable) => {
                 const regex = new RegExp(searchValue, 'ig'); // 大文字小文字を区別しない、グローバル検索
 
                 // キー、原文、翻訳文のそれぞれでマッチをチェックし、マッチ情報を収集
-                if (regex.test(keyText)) highlightMatches.push({ cell: row.querySelector('.string_key-column-header'), value: query, type: 'DEFAULT' }); //
-                if (regex.test(originalText)) highlightMatches.push({ cell: row.querySelector('.original-text-cell'), value: query, type: 'DEFAULT' }); //
-                if (regex.test(translationText)) highlightMatches.push({ cell: row.querySelector('.translation-cell'), value: query, type: 'DEFAULT' }); //
-                
+                if (regex.test(keyText)) highlightMatches.push({ cell: row.querySelector('.string_key-column-header'), value: query, type: 'DEFAULT' });
+                if (regex.test(originalText)) highlightMatches.push({ cell: row.querySelector('.original-text-cell'), value: query, type: 'DEFAULT' });
+                if (regex.test(translationText)) highlightMatches.push({ cell: row.querySelector('.translation-cell'), value: query, type: 'DEFAULT' });
+
                 if (highlightMatches.length === 0) {
                     matches = false; // シンプルな検索でマッチがなければ行を非表示
                 } else {
-                    applyHighlights(row, highlightMatches, useRegex); //
+                    applyHighlights(row, highlightMatches, useRegex);
                 }
             }
 
@@ -108,19 +108,19 @@ export const initializeTableFilters = (dataTable) => {
         });
     };
 
-    // --- Helper Functions ---
+    // --- ヘルパー関数 ---
 
     const checkStatusFilter = (row, filterValue) => {
         const translationCell = row.querySelector('.translation-cell');
         const statusText = translationCell?.textContent || '';
         const isReviewed = row.querySelector('.review-checkbox')?.checked ?? false;
-        
+
         // 翻訳ステータス
         const isUntranslated = statusText === '未翻訳';
         const isTranslated = statusText !== '未翻訳' && !statusText.startsWith('翻訳エラー');
         const isError = statusText.startsWith('翻訳エラー');
 
-        switch(filterValue) {
+        switch (filterValue) {
             case 'untranslated': return isUntranslated;
             case 'translated': return isTranslated;
             case 'error': return isError;
@@ -187,7 +187,7 @@ export const initializeTableFilters = (dataTable) => {
                 try {
                     regex = new RegExp(searchText, 'ig');
                 } catch (e) {
-                    console.warn("Invalid regex for highlighting:", searchText, e);
+                    console.warn("ハイライト用の正規表現が無効です:", searchText, e);
                     return;
                 }
             } else {
@@ -203,7 +203,7 @@ export const initializeTableFilters = (dataTable) => {
             // マッチしたテキストをハイライトされたスパンで置き換える。HTMLが二重にエスケープされないようにする。
             // HTMLをパースし、テキストノードを走査するために一時的なdivを使用
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = textContent; //
+            tempDiv.innerHTML = textContent;
 
             const highlightNode = (node) => {
                 if (node.nodeType === Node.TEXT_NODE) {
@@ -211,7 +211,7 @@ export const initializeTableFilters = (dataTable) => {
                     if (originalText && regex.test(originalText)) {
                         // replaceメソッドの第2引数にコールバック関数を渡すことで、
                         // マッチした部分のみをスパンタグで囲む
-                        const newHtml = originalText.replace(regex, (match) => `<span class="highlight">${match}</span>`); //
+                        const newHtml = originalText.replace(regex, (match) => `<span class="highlight">${match}</span>`);
                         const tempSpan = document.createElement('span');
                         tempSpan.innerHTML = newHtml;
                         while (tempSpan.firstChild) {
@@ -229,102 +229,26 @@ export const initializeTableFilters = (dataTable) => {
         });
     };
 
-    // --- Advanced Query Parsing and Evaluation ---
-
-    // const tokenize = (query) => {
-    //     // Updated regex to handle key:operator:value, key:value, and quoted values
-    //     const regex = /(!?\(|!?[a-zA-Z_]+(?::[a-zA-Z_]+)?:"(?:[^"\\]|\\.)*"|!?[a-zA-Z_]+(?::[a-zA-Z_]+)?:[^\s()|]+|[()|]|\S+)/g;
-    //     return query.match(regex) || [];
-    // };
-
-    // const parse = (tokens) => {
-    //     let position = 0;
-    //     const parseOr = () => {
-    //         let left = parseAnd();
-    //         while (position < tokens.length && tokens[position] === '|') {
-    //             position++;
-    //             const right = parseAnd();
-    //             left = { type: 'OR', left, right };
-    //         }
-    //         return left;
-    //     };
-    //     const parseAnd = () => {
-    //         const terms = [];
-    //         while (position < tokens.length && tokens[position] !== '|' && tokens[position] !== ')') {
-    //             const factor = parseFactor();
-    //             if (factor) terms.push(factor); // nullチェックを追加
-    //         }
-    //         if (terms.length === 0) return null;
-    //         if (terms.length === 1) return terms[0];
-    //         return terms.reduce((acc, term) => ({ type: 'AND', left: acc, right: term }));
-    //     };
-    //     const parseFactor = () => {
-    //         let token = tokens[position];
-    //         let isNot = false;
-    //         if (token.startsWith('!')) {
-    //             isNot = true;
-    //             token = token.substring(1);
-    //         }
-    //         let node;
-    //         if (token === '(') {
-    //             position++;
-    //             node = parseOr();
-    //             if (position >= tokens.length || tokens[position] !== ')') throw new Error('Mismatched parentheses');
-    //             position++;
-    //         } else {
-    //             position++;
-    //             const firstColonIndex = token.indexOf(':');
-    //             if (firstColonIndex > -1) {
-    //                 const key = token.substring(0, firstColonIndex);
-    //                 let remainder = token.substring(firstColonIndex + 1);
-
-    //                 let operator = 'contains'; // Default operator for key, original, translation
-    //                 let value = remainder;
-
-    //                 // Check if it's a key:operator:value format
-    //                 const secondColonIndex = remainder.indexOf(':');
-    //                 if (secondColonIndex > -1) {
-    //                     operator = remainder.substring(0, secondColonIndex);
-    //                     value = remainder.substring(secondColonIndex + 1);
-    //                 } else if (['status', 'reviewed', 'tone', 'chars'].includes(key)) {
-    //                     // These keys do not use an explicit operator in the tag string for 'is'
-    //                     // The 'is_not' case is handled by the '!' prefix
-    //                     operator = 'is'; 
-    //                 }
-
-    //                 if (value.startsWith('"') && value.endsWith('"')) {
-    //                     value = value.substring(1, value.length - 1).replace(/\\"/g, '"');
-    //                 }
-    //                 node = { type: 'TAG', key, operator, value }; // operator を追加
-    //             } else {
-    //                 node = { type: 'DEFAULT', value: token };
-    //             }
-    //         }
-    //         return isNot ? { type: 'NOT', value: node } : node;
-    //     };
-    //     const ast = parseOr();
-    //     if (position < tokens.length) throw new Error(`Unexpected token: ${tokens[position]}`);
-    //     return ast;
-    // };
+    // --- 高度なクエリの解析と評価 ---
 
     /**
-     * Evaluates the AST against a row and collects highlighting information.
-     * @param {object} node - The current node in the AST.
-     * @param {HTMLElement} row - The table row being evaluated.
-     * @param {boolean} useRegex - Whether to perform regex matching for default/text searches.
-     * @param {Array<object>} highlightMatches - Array to collect objects for highlighting.
-     * @returns {boolean} True if the row matches the filter, false otherwise.
+     * ASTを行に対して評価し、ハイライト情報を収集する。
+     * @param {object} node - ASTの現在のノード。
+     * @param {HTMLElement} row - 評価されるテーブル行。
+     * @param {boolean} useRegex - デフォルト/テキスト検索で正規表現マッチを行うかどうか。
+     * @param {Array<object>} highlightMatches - ハイライト用オブジェクトを収集する配列。
+     * @returns {boolean} 行がフィルタに一致する場合はtrue、そうでない場合はfalse。
      */
-    const evaluate = (node, row, useRegex, highlightMatches) => { //
+    const evaluate = (node, row, useRegex, highlightMatches) => {
         if (!node) return true;
         switch (node.type) {
             case 'AND': {
                 const leftMatches = [];
                 const rightMatches = [];
-                const leftResult = evaluate(node.left, row, useRegex, leftMatches); //
-                const rightResult = evaluate(node.right, row, useRegex, rightMatches); //
+                const leftResult = evaluate(node.left, row, useRegex, leftMatches);
+                const rightResult = evaluate(node.right, row, useRegex, rightMatches);
                 if (leftResult && rightResult) {
-                    highlightMatches.push(...leftMatches, ...rightMatches); //
+                    highlightMatches.push(...leftMatches, ...rightMatches);
                     return true;
                 }
                 return false;
@@ -332,36 +256,36 @@ export const initializeTableFilters = (dataTable) => {
             case 'OR': {
                 const leftMatches = [];
                 const rightMatches = [];
-                const leftResult = evaluate(node.left, row, useRegex, leftMatches); //
+                const leftResult = evaluate(node.left, row, useRegex, leftMatches);
                 if (leftResult) {
-                    highlightMatches.push(...leftMatches); //
+                    highlightMatches.push(...leftMatches);
                     return true;
                 }
-                const rightResult = evaluate(node.right, row, useRegex, rightMatches); //
+                const rightResult = evaluate(node.right, row, useRegex, rightMatches);
                 if (rightResult) {
-                    highlightMatches.push(...rightMatches); //
+                    highlightMatches.push(...rightMatches);
                     return true;
                 }
                 return false;
             }
             case 'NOT': return !evaluate(node.value, row, useRegex, []); // NOT操作はハイライトに寄与しない
             case 'TAG': return evaluateTag(node.key, node.operator, node.value, row, useRegex, highlightMatches, node.target);
-            case 'DEFAULT': return evaluateDefault(node.value, row, useRegex, highlightMatches); //
+            case 'DEFAULT': return evaluateDefault(node.value, row, useRegex, highlightMatches);
             default: return true;
         }
     };
 
     /**
-     * Tests if text matches a value based on an operator and collects highlight info.
-     * @param {string} text - The text to test.
-     * @param {string} value - The value to match against.
-     * @param {string} operator - The comparison operator.
-     * @param {boolean} useRegex - Whether to use regex for matching.
-     * @param {HTMLElement} cell - The cell element to highlight.
-     * @param {Array<object>} highlightMatches - Array to collect objects for highlighting.
-     * @returns {boolean} True if text matches, false otherwise.
+     * 演算子に基づいてテキストが値と一致するかをテストし、ハイライト情報を収集する。
+     * @param {string} text - テストするテキスト。
+     * @param {string} value - 一致させる値。
+     * @param {string} operator - 比較演算子。
+     * @param {boolean} useRegex - マッチングに正規表現を使用するかどうか。
+     * @param {HTMLElement} cell - ハイライトするセル要素。
+     * @param {Array<object>} highlightMatches - ハイライト用オブジェクトを収集する配列。
+     * @returns {boolean} テキストが一致する場合はtrue、そうでない場合はfalse。
      */
-    const testMatch = (text, value, operator, useRegex, cell, highlightMatches) => { //
+    const testMatch = (text, value, operator, useRegex, cell, highlightMatches) => {
         const lowerText = text.toLowerCase();
         const lowerValue = value.toLowerCase();
 
@@ -381,50 +305,50 @@ export const initializeTableFilters = (dataTable) => {
                 case 'is': isMatch = lowerText === lowerValue; break;
                 case 'starts_with': isMatch = lowerText.startsWith(lowerValue); break;
                 case 'ends_with': isMatch = lowerText.endsWith(lowerValue); break;
-                default: isMatch = false; // Should not happen with valid operators
+                default: isMatch = false; // 有効な演算子では発生しないはず
             }
         }
 
         if (isMatch && cell) {
             // ハイライトのために元の値を保存する。正規表現パターンである可能性があるため。
-            highlightMatches.push({ cell: cell, value: value, operator: operator, type: 'TAG' }); //
+            highlightMatches.push({ cell: cell, value: value, operator: operator, type: 'TAG' });
         }
         return isMatch;
     };
 
     /**
-     * Evaluates a default search and collects highlighting information.
-     * @param {string} value - The search value.
-     * @param {HTMLElement} row - The table row.
-     * @param {boolean} useRegex - Whether to use regex for matching.
-     * @param {Array<object>} highlightMatches - Array to collect objects for highlighting.
-     * @returns {boolean} True if a match is found in any default search column.
+     * デフォルト検索を評価し、ハイライト情報を収集する。
+     * @param {string} value - 検索値。
+     * @param {HTMLElement} row - テーブル行。
+     * @param {boolean} useRegex - マッチングに正規表現を使用するかどうか。
+     * @param {Array<object>} highlightMatches - ハイライト用オブジェクトを収集する配列。
+     * @returns {boolean} 任意のデフォルト検索カラムで一致が見つかった場合はtrue。
      */
-    const evaluateDefault = (value, row, useRegex, highlightMatches) => { //
+    const evaluateDefault = (value, row, useRegex, highlightMatches) => {
         const keyCell = row.querySelector('.string_key-column-header');
         const originalCell = row.querySelector('.original-text-cell');
         const translationCell = row.querySelector('.translation-cell');
 
         let matched = false;
-        if (testMatch(keyCell?.textContent || '', value, 'contains', useRegex, keyCell, highlightMatches)) matched = true; //
-        if (testMatch(originalCell?.textContent || '', value, 'contains', useRegex, originalCell, highlightMatches)) matched = true; //
-        if (testMatch(translationCell?.textContent || '', value, 'contains', useRegex, translationCell, highlightMatches)) matched = true; //
-        
+        if (testMatch(keyCell?.textContent || '', value, 'contains', useRegex, keyCell, highlightMatches)) matched = true;
+        if (testMatch(originalCell?.textContent || '', value, 'contains', useRegex, originalCell, highlightMatches)) matched = true;
+        if (testMatch(translationCell?.textContent || '', value, 'contains', useRegex, translationCell, highlightMatches)) matched = true;
+
         return matched;
     };
 
     /**
-     * Evaluates a tagged search and collects highlighting information.
-     * @param {string} key - The tag key (e.g., 'key', 'original', 'status').
-     * @param {string} operator - The comparison operator.
-     * @param {string} value - The tag value.
-     * @param {HTMLElement} row - The table row.
-     * @param {boolean} useRegex - Whether to use regex for matching.
-     * @param {Array<object>} highlightMatches - Array to collect objects for highlighting.
-     * @param {string} [target] - charsの場合のターゲットセル (key, original, translation)
-     * @returns {boolean} True if the tag matches.
+     * タグ付き検索を評価し、ハイライト情報を収集する。
+     * @param {string} key - タグキー (例: 'key', 'original', 'status')。
+     * @param {string} operator - 比較演算子。
+     * @param {string} value - タグ値。
+     * @param {HTMLElement} row - テーブル行。
+     * @param {boolean} useRegex - マッチングに正規表現を使用するかどうか。
+     * @param {Array<object>} highlightMatches - ハイライト用オブジェクトを収集する配列。
+     * @param {string} [target] - charsの場合のターゲットセル (key, original, translation)。
+     * @returns {boolean} タグが一致する場合はtrue。
      */
-    const evaluateTag = (key, operator, value, row, useRegex, highlightMatches, target = null) => { // 変更点: targetパラメータを追加
+    const evaluateTag = (key, operator, value, row, useRegex, highlightMatches, target = null) => {
         const keyCell = row.querySelector('.string_key-column-header');
         const originalCell = row.querySelector('.original-text-cell');
         const translationCell = row.querySelector('.translation-cell');
@@ -449,21 +373,21 @@ export const initializeTableFilters = (dataTable) => {
             case 'translation': return testMatch(translationCell?.textContent || '', value, operator, useRegex, translationCell, highlightMatches);
             case 'chars': {
                 // targetはASTノードのプロパティとして渡される (例: chars:key>=5 の 'key')
-                if (!target) return false; // 変更点: targetがない場合は評価しない
+                if (!target) return false;
 
                 let text = '';
                 let cellToHighlight = null;
-                if (target === 'key') { // 変更点: targetから直接判断
+                if (target === 'key') {
                     text = keyCell?.textContent || '';
                     cellToHighlight = keyCell;
-                } else if (target === 'original') { // 変更点: targetから直接判断
+                } else if (target === 'original') {
                     text = originalCell?.textContent || '';
                     cellToHighlight = originalCell;
-                } else if (target === 'translation') { // 変更点: targetから直接判断
+                } else if (target === 'translation') {
                     text = translationCell?.textContent || '';
                     cellToHighlight = translationCell;
                 }
-                
+
                 const num = parseInt(value, 10); // valueは数値部分
                 let isMatch = false;
                 switch (operator) {
@@ -485,7 +409,7 @@ export const initializeTableFilters = (dataTable) => {
         }
     };
 
-    // --- Event Listeners & Initialization ---
+    // --- イベントリスナーと初期化 ---
     statusFilterSelect.addEventListener('change', applyFilters);
     toneFilterSelect.addEventListener('change', applyFilters);
     keywordSearchInput.addEventListener('input', applyFilters);

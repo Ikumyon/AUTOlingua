@@ -6,7 +6,7 @@
  * @returns {string[]} トークンの配列
  */
 export const tokenize = (query) => {
-    // Updated regex to handle key:operator:value, key:value, and quoted values
+    // key:operator:value, key:value, および引用符で囲まれた値を処理するための正規表現
     const regex = /(!?\(|!?[a-zA-Z_]+(?::[a-zA-Z_]+)?:"(?:[^"\\]|\\.)*"|!?[a-zA-Z_]+(?::[a-zA-Z_]+)?:[^\s()|]+|[()|]|\S+)/g;
     return query.match(regex) || [];
 };
@@ -57,20 +57,20 @@ export const parse = (tokens) => {
                 const key = token.substring(0, firstColonIndex);
                 let remainder = token.substring(firstColonIndex + 1);
 
-                let operator = 'contains'; // Default operator for key, original, translation
+                let operator = 'contains'; // key, original, translation のデフォルト演算子
                 let value = remainder;
 
-                // Check if it's a key:operator:value format
+                // key:operator:value 形式かどうかをチェック
                 const secondColonIndex = remainder.indexOf(':');
                 if (secondColonIndex > -1) {
                     operator = remainder.substring(0, secondColonIndex);
                     value = remainder.substring(secondColonIndex + 1);
                 } else if (['status', 'reviewed', 'tone'].includes(key)) {
-                    // These keys do not use an explicit operator in the tag string for 'is'
-                    // The 'is_not' case is handled by the '!' prefix
+                    // これらのキーはタグ文字列内で明示的な演算子を使用しない、デフォルトは 'is'
+                    // 'is_not' のケースは '!' プレフィックスで処理される
                     operator = 'is';
                 } else if (key === 'chars') {
-                    // chars:targetOperatorValue (e.g., chars:key>=5)
+                    // chars:targetOperatorValue (例: chars:key>=5)
                     const match = value.match(/^(key|original|translation)([><]=?|<=?)(\d+)$/);
                     if (match) {
                         return isNot ? { type: 'NOT', value: { type: 'TAG', key, operator: match[2], value: match[3], target: match[1] } } : { type: 'TAG', key, operator: match[2], value: match[3], target: match[1] };
