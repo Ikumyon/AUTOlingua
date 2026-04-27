@@ -78,3 +78,10 @@ export interface ProgressData {
     data: ProgressEntry[];
     skippedRows: any[];
 }
+
+export interface ParatranzEntry {
+    key: string;         // キー (AUTOlinguaのkeyに対応)
+    original: string;    // 原文
+    translation: string; // 翻訳文
+    stage: number;       // ステータス (0:未翻訳, 1:翻訳済み, 2:校閲済み, 等)
+}

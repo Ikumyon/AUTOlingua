@@ -278,23 +278,28 @@ export class TranslationManager {
         
         const preModifiedText = maskedText;
 
+        const tokensInText = sentence.getTokens();
+        let tokenRule = "";
+        if (tokensInText.length > 0) {
+            tokenRule = `2. **改変禁止**: ${tokensInText.join(', ')} などの二重角括弧で囲まれたトークンは、変数や制御コードを保護したものです。これらを翻訳したり改変したりせず、日本語として自然な位置に必ずそのまま残すこと。\n`;
+        }
+
         try {
             const systemPrompt = `# 役割
-ゲームおよびアプリケーションのローカライズを専門とする、プロフェッショナルな翻訳エンジニア。
+日本語の翻訳者
 
 # 目的
 提供された「原文」を、文脈と指定されたスタイルに沿って自然な「日本語」に翻訳する。
 
 # 重要ルール
 1. **出力フォーマット**: 最終的な翻訳結果は、必ず <translation> と </translation> のタグで挟んで出力すること。
-2. **改変禁止**: ⟦A7KQ2⟧ などの二重角括弧で囲まれたトークンは、変数や制御コードを保護したものです。これらを翻訳したり改変したりせず、日本語として自然な位置に必ずそのまま残すこと。
-3. **純粋な出力**: タグの外側に説明文、挨拶、推論プロセスなどを一切含めないこと。
+${tokenRule}
 
 # スタイル・用語指示
 - **口調**: ${toneInstruction}
 - ${glossaryInstructions || '用語集: 特になし'}`;
 
-        const userMessage = maskedText;
+        const userMessage = `原文: """\n${maskedText}\n"""`;
 
             const llmResponse = await callLLMService(effectiveLlmModelId, systemPrompt, userMessage, settingsManager.currentApiKey, isThinkingModel);
             

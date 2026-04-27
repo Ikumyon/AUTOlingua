@@ -11,7 +11,7 @@ import { TableFilter } from './tableFilter';
 import { TranslationManager } from './translationManager';
 import { StructureParser } from './core/StructureParser';
 import { stageManager } from './stageManager';
-import { ProgressData, ProgressEntry } from './types';
+import { ProgressData, ProgressEntry, ParatranzEntry } from './types';
 
 export interface SkippedRow {
     key: string;
@@ -296,7 +296,12 @@ export class FileProcessor {
             if (e.target && typeof e.target.result === 'string') {
                 try {
                     if (file.name.endsWith('.json')) {
-                        await this.importProgressFromJson(e.target.result);
+                        const jsonData = JSON.parse(e.target.result);
+                        if (Array.isArray(jsonData)) {
+                            await this.importFromParatranzJson(jsonData);
+                        } else {
+                            await this.importProgressFromJson(jsonData);
+                        }
                     } else {
                         await this.processFileContent(e.target.result);
                     }
@@ -481,9 +486,57 @@ export class FileProcessor {
         alertMessage("作業状況を保存しました。", 'success');
     }
 
-    public async importProgressFromJson(content: string): Promise<void> {
+    public exportAsParatranzJson(): void {
+        if (!this.dataTable) return;
+        const rows = this.dataTable.querySelectorAll('tbody tr') as NodeListOf<HTMLTableRowElement>;
+        if (rows.length === 0) {
+            alertMessage("保存するデータがありません。", 'warning');
+            return;
+        }
+
+        const entries: ParatranzEntry[] = [];
+        rows.forEach(row => {
+            const key = row.getAttribute('data-key') || '';
+            const originalTextCell = row.querySelector('.original-text-cell') as HTMLElement;
+            const translationCell = row.querySelector('.translation-cell') as HTMLElement;
+            const stageAttr = row.getAttribute('data-stage');
+            const stage = stageAttr ? parseInt(stageAttr, 10) : 0;
+
+            if (key && originalTextCell && translationCell) {
+                // AUTOlingua 5 (レビュー済み) -> Paratranz 2 (校閲済み)
+                // AUTOlingua 2 (疑問あり) -> Paratranz 3 (修正済み/競合)
+                // その他はそのまま (0->0, 1->1)
+                let paratranzStage = stage;
+                if (stage === 5) paratranzStage = 2;
+                else if (stage === 2) paratranzStage = 3;
+
+                entries.push({
+                    key,
+                    original: originalTextCell.innerText.trim(),
+                    translation: translationCell.innerText.trim(),
+                    stage: paratranzStage
+                });
+            }
+        });
+
+        const jsonString = JSON.stringify(entries, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date();
+        const dateString = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+        a.download = `${this.currentFileName.split('.')[0]}_paratranz_${dateString}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alertMessage("Paratranz形式で保存しました。", 'success');
+    }
+
+    public async importProgressFromJson(content: string | object): Promise<void> {
         try {
-            const progressData: ProgressData = JSON.parse(content);
+            const progressData: ProgressData = typeof content === 'string' ? JSON.parse(content) : content as ProgressData;
             if (!progressData.data || !Array.isArray(progressData.data)) {
                 throw new Error("無効なファイル形式です。");
             }
@@ -562,6 +615,82 @@ export class FileProcessor {
         } catch (error: any) {
             console.error("作業状況の復元に失敗しました:", error);
             showErrorMessage("作業状況の復元に失敗しました: " + error.message);
+        }
+    }
+
+    public async importFromParatranzJson(entries: ParatranzEntry[]): Promise<void> {
+        try {
+            if (!Array.isArray(entries)) {
+                throw new Error("無効なParatranz形式です。");
+            }
+
+            this.skippedRows = []; // Paratranzからは全行復元される想定
+
+            let html = '';
+            entries.forEach(entry => {
+                const original = entry.original || '';
+                const valueWithBr = escapeHTML(original).replace(/\\n/g, '<br>');
+                const structure = StructureParser.parse(original, settingsManager.modifierCharacters);
+                const groupKey = structure.groupKey;
+                
+                // Paratranz 2 (校閲済み) -> AUTOlingua 5 (レビュー済み)
+                // Paratranz 3 -> AUTOlingua 2 (疑問あり)
+                let autolinguaStage = entry.stage;
+                if (entry.stage === 2) autolinguaStage = 5;
+                else if (entry.stage === 3) autolinguaStage = 2;
+
+                const stageControlHtml = stageManager.createStageControlHtml(autolinguaStage);
+
+                html += `<tr data-key="${escapeHTML(entry.key)}" data-version="" data-stage="${autolinguaStage}" data-hash="${escapeHTML(groupKey)}">`;
+                html += `<td class="delete-column-cell"><button class="delete-row-button btn-icon btn-sm danger"><i class="fas fa-trash-alt"></i></button></td>`;
+                html += `<td class="string_key-column-header">${escapeHTML(entry.key)}</td>`;
+                html += `<td class="original-text-cell">${valueWithBr}</td>`;
+                
+                let translationDisplay = entry.translation || '';
+                if (translationDisplay === '未翻訳') {
+                    translationDisplay = '';
+                }
+                
+                html += `<td class="translation-cell" contenteditable="true" placeholder="未翻訳" title="クリックして編集">${escapeHTML(translationDisplay).replace(/\\n/g, '<br>')}</td>`;
+                html += `<td class="review-column-cell">${stageControlHtml}</td>`;
+                html += `<td class="tone-column-cell">
+                            <select class="individual-tone-select">
+                            </select>
+                        </td>`;
+                html += `<td class="action-column-cell">
+                            <div class="flex items-center">
+                                <button class="translate-button btn btn-primary btn-sm">
+                                    <i class="fas fa-magic mr-1"></i>翻訳
+                                </button>
+                                <button class="get-suggestions-button btn btn-secondary btn-sm !px-2 border-l border-white/10" title="他の翻訳案を表示">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </td>`;
+                html += `</tr>`;
+            });
+
+            if (this.dataTable) {
+                const tbody = this.dataTable.querySelector('tbody');
+                if (tbody) tbody.innerHTML = html;
+            }
+
+            if (this.tableContainer) this.tableContainer.classList.remove('hidden');
+            if (this.translateAllButton) this.translateAllButton.classList.remove('hidden');
+            if (this.translatedFileDownloadSection) this.translatedFileDownloadSection.classList.remove('hidden');
+            
+            this.adjustKeyColumnWidth();
+            if (this.dataTable) initTableResizer(this.dataTable);
+            
+            settingsManager.populateToneDropdowns();
+            settingsManager.updateReviewColumnVisibility();
+            this.updateTranslationButtonsState();
+            if (this.tableFilter) this.tableFilter.updateAllTableRows();
+            
+            alertMessage("Paratranz形式から復元しました。", 'success');
+        } catch (error: any) {
+            console.error("Paratranz形式の読み込みに失敗しました:", error);
+            showErrorMessage("Paratranz形式の読み込みに失敗しました: " + error.message);
         }
     }
 }

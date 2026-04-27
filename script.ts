@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filePrefixSelect = document.getElementById('file-prefix-select') as HTMLSelectElement;
     const downloadTranslatedYmlButton = document.getElementById('download-translated-yml-button') as HTMLButtonElement;
     const downloadProgressJsonButton = document.getElementById('download-progress-json-button') as HTMLButtonElement;
+    const downloadParatranzJsonButton = document.getElementById('download-paratranz-json-button') as HTMLButtonElement;
     const downloadLogButton = document.getElementById('download-log-button') as HTMLButtonElement;
 
     // レビュー / アバウト / その他
@@ -439,6 +440,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     downloadProgressJsonButton.addEventListener('click', () => {
         fileProcessor.exportProgressAsJson();
+    });
+
+    downloadParatranzJsonButton.addEventListener('click', () => {
+        fileProcessor.exportAsParatranzJson();
     });
 
     // タブ
