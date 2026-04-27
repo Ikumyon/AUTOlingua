@@ -1,0 +1,1687 @@
+/* style.css */
+:root {
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    --secondary-gradient: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    --primary-glow: 0 0 20px rgba(79, 70, 229, 0.4);
+    --glass-blur: blur(4px);
+    --glass-alpha: 0.7;
+    --glass-bg: rgba(255, 255, 255, var(--glass-alpha));
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --overlay-bg: rgba(248, 250, 252, var(--glass-alpha));
+    --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --input-focus: rgba(79, 70, 229, 0.2);
+
+    /* テキストカラー変数 (一括管理用) */
+    --text-primary: #1e293b;   /* Slate 800 */
+    --text-secondary: #475569; /* Slate 600 */
+    --text-muted: #64748b;     /* Slate 500 */
+}
+
+.dark {
+    --glass-bg: rgba(15, 23, 42, var(--glass-alpha));
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --overlay-bg: rgba(2, 6, 23, var(--glass-alpha));
+    --input-focus: rgba(99, 102, 241, 0.2);
+
+    /* ダークテーマ用テキストカラー */
+    --text-primary: #f8fafc;   /* Slate 50 */
+    --text-secondary: #cbd5e1; /* Slate 300 */
+    --text-muted: #94a3b8;     /* Slate 400 */
+}
+
+/* --- 共通デザインクラス --- */
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.025em;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 0.75rem;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.sub-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.helper-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-top: 0.5rem;
+}
+
+/* --- コンポーネント: ボタン --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    border: 1px solid transparent;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+/* Primary: グラデーション */
+.btn-primary {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 15px -3px rgba(79, 70, 229, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px -5px rgba(79, 70, 229, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Secondary: セカンダリグラデーション背景 */
+.btn-secondary {
+    background: var(--secondary-gradient) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark .btn-secondary {
+    background: var(--secondary-gradient) !important;
+    color: white !important;
+}
+
+.btn-secondary:hover {
+    filter: brightness(1.1) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .btn-secondary:hover {
+    filter: brightness(1.2) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Danger: 赤グラデーション */
+.btn-success {
+    background: var(--success-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-success:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-danger {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+.btn-danger:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* 小さいボタン用ユーティリティ */
+.btn-sm {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 0.6rem !important;
+}
+
+/* アイコンボタン (編集/削除用) */
+.btn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: #ffffff;
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+}
+
+
+.dark .btn-icon {
+    background: #1e293b;
+}
+
+.btn-icon:hover {
+    background: white;
+    transform: translateY(-1px);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.dark .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-icon.danger:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+
+/* --- コンポーネント: バッジ --- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid transparent;
+}
+
+.badge-primary {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    border-color: rgba(79, 70, 229, 0.2);
+}
+
+.badge-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* --- コンポーネント: アイコンボックス --- */
+.icon-box {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+    font-size: 1.1rem;
+}
+
+/* --- コンポーネント: 入力フィールド --- */
+.input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+}
+
+.dark .input-field {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px var(--input-focus);
+}
+
+/* モーダルの背景 / オーバーレイ共通スタイル */
+.modal-overlay {
+    background-color: var(--overlay-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+}
+
+/* メインカードとモーダルの共通グラススタイル */
+.main-card,
+#settings-modal > div,
+#passphrase-modal > div,
+#about-modal > div,
+#advanced-filter-modal > div,
+#manual-edit-group-modal > div,
+#help-modal-content,
+.sticky-filter-bar,
+#translate-all-dropdown-menu {
+    background-color: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--card-shadow);
+}
+
+/* Outfitフォントをbodyに適用 */
+body {
+    font-family: 'Outfit', sans-serif;
+    color: #1e293b;
+    background: fixed linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.dark body {
+    color: #f1f5f9;
+    background: fixed linear-gradient(135deg, #020617 0%, #0f172a 100%);
+}
+
+/* --- ボタンID個別定義セクション（削除・統合済み） --- */
+
+/* 入力欄とセレクトボックスの基本スタイル (現代化) */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+select {
+    background-color: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 0.85rem !important; /* 角丸も少し強調 */
+    color: #1e293b !important;
+    font-size: 0.9rem !important; /* 文字も少し大きく */
+    padding: 0.5rem 0.8rem !important; /* 高さを抑えるための調整 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    appearance: none;
+}
+
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark select {
+    background-color: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: #f1f5f9 !important;
+}
+
+input:focus,
+select:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    background-color: rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 0 0 4px var(--input-focus), 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+.dark input:focus,
+.dark select:focus {
+    background-color: rgba(30, 41, 59, 0.7) !important;
+}
+
+/* セレクトボックスの矢印カスタム */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.2rem !important;
+}
+
+
+/* すべてのボタンに統一されたアクティブ状態を適用 */
+button:not(.tab-button):active {
+    transform: scale(0.96) !important;
+}
+
+button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ドラッグ＆ドロップエリアのホバー時のスタイルをTailwindで制御するため、ここでは特に記述なし */
+/* Tailwind CSSのクラスでほとんどのスタイルを適用しています */
+
+/* ==========================================================================
+   テーブル関連スタイル (Table Styles)
+   ========================================================================== */
+
+/* --- 1. 共通 (Common) --- */
+/* テーブル全体の見た目、ヘッダー、セル余白、行ホバー、スクロールコンテナ、ガラス表現 */
+
+/* --- ステージ管理ドロップダウン --- */
+.stage-menu {
+    position: fixed !important;
+    z-index: 9999 !important;
+    background-color: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    pointer-events: all !important;
+}
+
+.stage-item {
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.stage-item:hover {
+    background-color: rgba(99, 102, 241, 0.1);
+    transform: translateX(2px);
+}
+
+.dark .stage-item:hover {
+    background-color: rgba(129, 140, 248, 0.2);
+}
+
+.stage-dropdown-toggle {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0.6rem 0.6rem 0 !important;
+    margin-left: -1px;
+}
+
+.dark .stage-dropdown-toggle {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.stage-main-button {
+    border-radius: 0.6rem 0 0 0.6rem !important;
+}
+
+/* ステージごとのカラーバリエーション */
+.stage-btn-0 { background: #94a3b8 !important; color: white !important; }
+.stage-btn-1 { background: #3b82f6 !important; color: white !important; }
+.stage-btn-2 { background: #f59e0b !important; color: white !important; }
+.stage-btn-5 { background: #10b981 !important; color: white !important; }
+
+
+#table-container {
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    transition: all 0.3s ease;
+    border: none !important;
+}
+
+#data-table,
+#glossary-table,
+#modifier-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: auto;
+    min-width: 100%;
+}
+
+#data-table th,
+#glossary-table th,
+#modifier-table th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important;
+    color: var(--text-primary) !important;
+    font-weight: 800 !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #94a3b8 !important;
+    border-right: 1px solid #cbd5e1 !important; /* ヘッダーにも右側の線を追加 */
+    padding: 12px 16px !important;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.dark #data-table th,
+.dark #glossary-table th,
+.dark #modifier-table th {
+    background: linear-gradient(to bottom, #1e293b, #0f172a) !important;
+    color: var(--text-secondary) !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+#data-table td,
+#glossary-table td,
+#modifier-table td {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    border-right: 1px solid #cbd5e1 !important;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    word-break: break-word;
+}
+
+.dark #data-table td,
+.dark #glossary-table td,
+.dark #modifier-table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 最後の列の右ボーダーを削除 */
+.action-column-cell,
+.glossary-action-header,
+.modifier-action-header {
+    border-right: none !important;
+}
+
+#data-table tbody tr:hover,
+#glossary-table tbody tr:hover,
+#modifier-table tbody tr:hover {
+    background-color: rgba(79, 70, 229, 0.02) !important;
+}
+
+.dark #data-table tbody tr:hover,
+.dark #glossary-table tbody tr:hover,
+.dark #modifier-table tbody tr:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+
+/* --- 2. 編集テーブル専用 (Edit Table Specific) --- */
+/* 列リサイズ、翻訳セル編集、アクション列、個別口調セレクト */
+
+#data-table {
+    table-layout: fixed;
+}
+
+#data-table th {
+    overflow: visible;
+    min-width: 50px;
+    padding: 0 !important;
+}
+
+.th-content {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 16px;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.resizer, .resizer-left {
+    position: absolute;
+    top: 0;
+    width: 5px;
+    cursor: col-resize;
+    user-select: none;
+    height: 100%;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+}
+
+.resizer { right: -3px; width: 6px; }
+.resizer-left { left: 0; }
+
+.resizer:hover, .resizer-left:hover, .resizing .resizer {
+    background-color: #6366f1;
+}
+
+table.resizing, table.resizing * {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
+/* 翻訳セル編集 */
+.translation-cell {
+    position: relative;
+    outline: none !important;
+    cursor: text;
+}
+
+.translation-cell:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+.translation-cell:focus {
+    background-color: white !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), inset 0 0 0 1px #6366f1 !important;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.dark .translation-cell:focus {
+    background-color: #0f172a !important;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2), inset 0 0 0 1px #818cf8 !important;
+}
+
+/* 翻訳セル プレースホルダー */
+.translation-cell:empty::before {
+    content: attr(placeholder);
+    color: #94a3b8; /* gray-400 */
+    font-style: italic;
+    pointer-events: none;
+    display: block; /* For empty div to show content */
+}
+
+.dark .translation-cell:empty::before {
+    color: #475569; /* slate-600 */
+}
+
+/* アクション列・ボタン */
+.translate-button {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    padding: 0.4rem 0.8rem !important;
+    border-radius: 0.6rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none !important;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2) !important;
+}
+
+.translate-button:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+.delete-row-button {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    padding: 0.4rem 0.6rem !important;
+    border-radius: 0.6rem !important;
+    font-size: 0.75rem !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.2) !important;
+}
+
+.delete-row-button:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 個別口調セレクト */
+.individual-tone-select {
+    display: block;
+    width: 100%;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.5em;
+    padding-right: 2.5rem;
+}
+
+.dark .individual-tone-select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23d1d5db'%3E%3Cpath fill-rule='evenodd' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z' clip-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* 専用列調整 */
+th.string_key-column-header,
+th.original_text-column-header,
+th.translation-cell,
+th.review-column-header,
+th.tone-column-header,
+th.action-column-header,
+th.delete-column-header {
+    min-width: 50px;
+}
+
+td.review-column-cell,
+td.action-column-cell,
+td.delete-column-cell {
+    text-align: center;
+}
+
+.review-checkbox {
+    display: none;
+}
+
+.review-checkbox:not(.hidden) {
+    display: inline-block;
+}
+
+
+/* --- 3. 用語集/修飾文字専用 (Glossary/Modifier Specific) --- */
+/* ボタン群、折り返し、専用列調整 */
+
+/* ボタン群 */
+.glossary-button-group,
+.modifier-button-group {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.edit-glossary-button,
+.edit-modifier-button {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 0.5rem !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none !important;
+}
+
+.edit-glossary-button:hover,
+.edit-modifier-button:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+.delete-glossary-button,
+.delete-modifier-button {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    padding: 0.3rem 0.6rem !important;
+    border-radius: 0.5rem !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none !important;
+}
+
+.delete-glossary-button:hover,
+.delete-modifier-button:hover {
+    filter: brightness(1.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+
+/* 折り返し設定 */
+#glossary-table td,
+#modifier-table td {
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* 専用列調整 */
+#glossary-table .glossary-original-alt-cell {
+    white-space: pre-wrap !important;
+}
+
+/* 用語集ファイルドロップゾーン */
+#glossary-file-drop-zone {
+    border: 4px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#glossary-file-drop-zone:hover {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.dark #glossary-file-drop-zone {
+    border-color: #4b5563;
+    background-color: rgba(31, 41, 55, 0.5);
+}
+
+/* 矢印位置調整 */
+#file-prefix-select,
+#glossary-pos {
+    background-position: right 0.75rem center !important;
+}
+
+/* 設定モーダルのタブスタイル */
+.tab-button {
+    width: 100%;
+    white-space: nowrap;
+    background-color: transparent;
+    color: #64748b;
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+}
+
+.tab-button:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    color: #6366f1;
+}
+
+.tab-button.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+}
+
+.dark .tab-button {
+    color: #94a3b8;
+}
+
+.dark .tab-button:hover {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+}
+
+.dark .tab-button.active {
+    background-color: #6366f1;
+    color: white;
+}
+
+
+.tab-content.hidden {
+    display: none;
+}
+
+.custom-tone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 6px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .custom-tone-item {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #374151; /* gray-700 */
+}
+
+.dark .custom-tone-item .tone-name {
+    color: #f3f4f6; /* gray-100 */
+}
+
+.custom-tone-item .tone-name {
+    font-weight: 500;
+    color: #374151;
+    /* gray-700 */
+}
+
+.custom-tone-item .button-group {
+    display: flex;
+    gap: 8px;
+    /* ボタン間のスペース */
+}
+
+
+
+
+
+
+
+
+
+/* カスタムアラートメッセージのスタイル */
+.custom-alert {
+    animation: fadeOut 0.5s ease-out 2.5s forwards;
+    /* 2.5秒後にフェードアウト開始 */
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* 翻訳案オーバーレイのスタイル */
+#suggestions-overlay {
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    -webkit-backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 1.5rem !important;
+    box-shadow: var(--card-shadow) !important;
+    padding: 1.25rem !important;
+    max-height: 450px;
+    overflow-y: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.dark .suggestion-item {
+    background: rgba(15, 23, 42, 0.3);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateX(4px);
+    border-color: var(--primary-color);
+}
+
+.dark .suggestion-item:hover {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+/* 他の提案ボタンのアイコン */
+.get-suggestions-button i {
+    font-size: 1.2em;
+    /* アイコンサイズを調整 */
+    vertical-align: middle;
+    /* 垂直方向の中央揃え */
+}
+
+/* コピーアイコンのスタイル */
+.copy-suggestion-button i {
+    font-size: 1.1em;
+    /* アイコンサイズを調整 */
+}
+
+.llm-provider-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 6px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .llm-provider-item {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #374151; /* gray-700 */
+}
+
+.llm-provider-item .button-group {
+    display: flex;
+    gap: 8px;
+    /* ボタン間のスペース */
+}
+
+/* 無効な正規表現が入力された際の入力ボックスのスタイル */
+.invalid-regex {
+    border-color: #ef4444 !important;
+    /* Tailwindのred-500 */
+    box-shadow: 0 0 0 1px #ef4444;
+}
+
+.sticky-filter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.dark .sticky-filter-bar {
+    background-color: var(--glass-bg);
+}
+
+/* --- Search Option Buttons (Aa, .*) --- */
+.search-option-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.search-option-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .search-option-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.search-option-button.active {
+    color: #6366f1 !important;
+    background-color: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.highlight {
+    background-color: #fef08a;
+    padding: 0 2px;
+    border-radius: 3px;
+    color: inherit;
+}
+
+.dark .highlight {
+    color: #000 !important;
+}
+
+/* --- Animations --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+#translated-file-download-section {
+    background: linear-gradient(to right, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    border-radius: 1.5rem;
+}
+
+/* 全体口調設定ドロップダウンの幅を調整 */
+#tone-select, #global-llm-provider-select, #status-filter-select, #tone-filter-select {
+    min-width: 140px;
+    border-radius: 0.75rem;
+    border: 1px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    padding: 8px 12px;
+}
+
+/* 検索ボックスの調整 */
+#keyword-search-input {
+    border-radius: 0.75rem;
+    border: 1px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    padding: 10px 12px 10px 36px;
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.4);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* --- 高度なフィルター (Advanced Filter) 現代化スタイル --- */
+
+.filter-block {
+    position: relative;
+    margin-bottom: 0.75rem;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-block-content {
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+/* ロジックブロック (AND/OR コンテナ) */
+.logic-block > .filter-block-content {
+    background: rgba(241, 245, 249, 0.6);
+    border: 1px solid rgba(79, 70, 229, 0.1);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+}
+
+.dark .logic-block > .filter-block-content {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.logic-block-header {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(79, 70, 229, 0.05);
+    border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+.dark .logic-block-header {
+    background: rgba(129, 140, 248, 0.1);
+    border-bottom: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.logic-block-body {
+    padding: 1rem;
+    padding-left: 2rem; /* ネスト感を出すための余白 */
+    min-height: 20px;
+}
+
+.logic-block-footer {
+    padding: 0.75rem 1rem;
+    display: flex;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* 条件ブロック */
+.condition-block > .filter-block-content {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 0.625rem 1rem;
+}
+
+.dark .condition-block > .filter-block-content {
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.condition-block:hover > .filter-block-content {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+    border-color: rgba(79, 70, 229, 0.3);
+}
+
+/* ドラッグハンドル */
+.drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    padding: 0.5rem;
+    margin-right: 0.25rem;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.drag-handle:hover {
+    color: var(--text-primary);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* ガイドライン (ネストの視覚化) */
+.filter-block .guideline {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, rgba(79, 70, 229, 0.2) 10%, rgba(79, 70, 229, 0.2) 90%, transparent);
+    height: 100%;
+    z-index: 0;
+}
+
+.filter-block .guideline-connector {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    width: 1rem;
+    height: 2px;
+    background: rgba(79, 70, 229, 0.2);
+    z-index: 0;
+}
+
+.filter-block.is-root > .guideline,
+.filter-block.is-root > .guideline-connector {
+    display: none;
+}
+
+/* ドラッグ中の状態 */
+.filter-block.is-dragging {
+    opacity: 0.4;
+    transform: scale(0.98);
+}
+
+.drop-placeholder {
+    border: 2px dashed rgba(79, 70, 229, 0.4);
+    background: rgba(79, 70, 229, 0.05);
+    border-radius: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+/* 入力要素の調整 (フィルター内専用) */
+.filter-block-content select,
+.filter-block-content input {
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.filter-block-content select {
+    padding-right: 2.5rem !important;
+}
+
+.not-operator-container {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.not-operator-container:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.not-operator-container input[type="checkbox"] {
+    display: none;
+}
+
+.not-operator-container.is-active {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+/* 削除ボタンの調整 */
+.remove-block-button {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+.remove-block-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+
+/* --- スプリットボタン / ドロップダウン用アニメーション --- */
+.animate-in {
+    animation-duration: 200ms;
+    animation-fill-mode: both;
+}
+
+.fade-in {
+    animation-name: fadeIn;
+}
+
+.slide-in-from-top-1 {
+    animation-name: slideInFromTop1;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInFromTop1 {
+    from { transform: translateY(-0.25rem); }
+    to { transform: translateY(0); }
+}
+
+/* スプリットボタンのホバー・アクティブ時の統合感調整 */
+.group:hover #translate-all-button,
+.group:hover #translate-all-dropdown-toggle {
+    filter: brightness(1.05);
+}
+
+/* 実行グループ内のボタン垂直整列の保証 */
+#execution-group .relative > button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* 設定項目のセレクトボックスの基本スタイル */
+#tone-select, #global-llm-provider-select {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+#tone-select:hover, #global-llm-provider-select:hover {
+    border-color: #3b82f6; /* blue-500 */
+}
+
+/* スプリットボタンの境界線と角の精度向上 */
+#translate-all-button {
+    border-right-width: 1.5px !important;
+    border-right-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark #translate-all-button {
+    border-right-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+#translate-all-dropdown-toggle {
+    border-left: none !important;
+}
+
+/* ボタン内テキストの1行化徹底 */
+#translate-all-button span {
+    white-space: nowrap;
+    display: block;
+}
+
+#translate-all-dropdown-menu button i {
+    transition: transform 0.2s ease;
+}
+
+#translate-all-dropdown-menu button:hover i {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* --- Help System Styles --- */
+.help-icon {
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.help-icon:hover {
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+#help-modal {
+    z-index: 1000;
+}
+
+#help-modal .backdrop-blur-sm {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#help-modal-content {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.dark #help-modal-content {
+    background-color: #1f2937; /* gray-800 */
+    border-color: #374151; /* gray-700 */
+}
+
+#help-body p {
+    margin-bottom: 0.75rem;
+}
+
+#help-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* 設定モーダルの各タブのコンテンツ高さを統一 */
+#settings-modal .w-3\/4 {
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* フォーム要素の高級化 */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    transition: all 0.3s ease !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark select,
+.dark textarea {
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 4px var(--input-focus) !important;
+    outline: none !important;
+    background-color: #fff !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+    background-color: #0f172a !important;
+}
+
+/* 設定モーダル内のインナーカード（追加/編集エリア・設定行） */
+.settings-row,
+.tab-content > div[class*="border"] {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(99, 102, 241, 0.1) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.dark .settings-row,
+.dark .tab-content > div[class*="border"] {
+    background-color: rgba(30, 41, 59, 0.4) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+.settings-row:hover {
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark .settings-row:hover {
+    background-color: rgba(30, 41, 59, 0.6) !important;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+
+
+
+/* 編集・削除ボタン (Success/Danger) の調整 */
+.edit-tone-button,
+.edit-glossary-button,
+.edit-modifier-button {
+    background: var(--success-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 10px -2px rgba(16, 185, 129, 0.4) !important;
+    cursor: pointer;
+}
+
+.delete-tone-button,
+.delete-glossary-button,
+.delete-modifier-button {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 10px -2px rgba(244, 63, 94, 0.4) !important;
+    cursor: pointer;
+}
+
+.edit-tone-button:hover,
+.edit-glossary-button:hover,
+.edit-modifier-button:hover,
+.delete-tone-button:hover,
+.delete-glossary-button:hover,
+.delete-modifier-button:hover {
+    filter: brightness(1.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+.edit-tone-button:hover,
+.edit-glossary-button:hover,
+.edit-modifier-button:hover {
+    box-shadow: 0 8px 15px -3px rgba(16, 185, 129, 0.5) !important;
+}
+
+.delete-tone-button:hover,
+.delete-glossary-button:hover,
+.delete-modifier-button:hover {
+    box-shadow: 0 8px 15px -3px rgba(244, 63, 94, 0.5) !important;
+}
+
+.edit-tone-button:active,
+.delete-tone-button:active {
+    transform: translateY(0) scale(0.95) !important;
+}
+
+
+/* メインアクションボタンの調整 */
+#translate-all-button,
+.translate-button {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#translate-all-dropdown-toggle,
+.get-suggestions-button,
+.stage-dropdown-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* ステージボタン専用スタイル */
+.stage-main-button {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    min-width: 85px;
+    justify-content: center;
+    border: none !important;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.stage-dropdown-toggle {
+    border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: var(--secondary-gradient) !important;
+    color: white !important;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ステージごとのカラー定義 (翻訳ボタン等のグラデーションを参考) */
+.stage-btn-0 { background: var(--secondary-gradient) !important; }
+.stage-btn-1 { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; box-shadow: 0 4px 10px -2px rgba(37, 99, 235, 0.4) !important; }
+.stage-btn-2 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important; box-shadow: 0 4px 10px -2px rgba(217, 119, 6, 0.4) !important; }
+.stage-btn-5 { background: var(--primary-gradient) !important; box-shadow: 0 4px 10px -2px rgba(99, 102, 241, 0.4) !important; }
+
+.stage-main-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.stage-dropdown-toggle:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+/* 行単位の小さいボタンは高さを上書き */
+.translate-button.btn-sm,
+.get-suggestions-button.btn-sm,
+.stage-main-button.btn-sm,
+.stage-dropdown-toggle.btn-sm {
+    height: 2.25rem !important;
+}
+
+/* スプリットボタンの親コンテナで高さを揃える */
+.flex.items-center:has(> #translate-all-button),
+.flex.items-center:has(> .translate-button),
+.flex.items-center:has(> .stage-main-button) {
+    align-items: stretch !important;
+}
+
+/* ステージドロップダウンメニューのグラススタイル */
+.stage-menu {
+    background-color: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    -webkit-backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .stage-menu {
+    background-color: rgba(30, 41, 59, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.stage-item:hover {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    color: #6366f1 !important;
+}
+
+.dark .stage-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #818cf8 !important;
+}
+
+#save-settings-button,
+#submit-passphrase-button,
+#download-glossary-button,
+#add-condition-button,
+#add-custom-tone-button,
+#add-glossary-term-button,
+#add-modifier-button {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.4) !important;
+}
+
+#clear-glossary-button,
+#delete-api-key-from-decrypt-button {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 15px -3px rgba(244, 63, 94, 0.4) !important;
+}
+
+#save-settings-button:hover,
+#submit-passphrase-button:hover,
+#download-glossary-button:hover,
+#add-condition-button:hover,
+#add-custom-tone-button:hover,
+#add-glossary-term-button:hover,
+#add-modifier-button:hover,
+#clear-glossary-button:hover,
+#delete-api-key-from-decrypt-button:hover {
+    filter: brightness(1.1) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+
+/* 全削除ボタンを危険色グラデーションに */
+#clear-all-modifiers-button,
+#clear-glossary-button {
+    background: var(--danger-gradient) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+#clear-all-modifiers-button:hover,
+#clear-glossary-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+    filter: brightness(1.1) !important;
+}
+
+/* ダウンロードボタンを主要色グラデーションに */
+#download-glossary-button {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+}
+
+#download-glossary-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+    filter: brightness(1.1) !important;
+}
+
+/* ヘルプボタンの共通スタイル */
+.help-trigger {
+    color: #555d9f !important; /* indigo-400 */
+    opacity: 0.8; /* 視認性向上のため不透明度をアップ */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0.375rem; /* ml-1.5 */
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.help-trigger:hover {
+    opacity: 1;
+    color: #6366f1 !important; /* indigo-500 */
+    transform: scale(1.1);
+}
+
+.dark .help-trigger {
+    color: #a5b4fc !important; /* indigo-300 */
+}
+
+.dark .help-trigger:hover {
+    color: #818cf8 !important;
+}
