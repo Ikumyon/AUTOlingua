@@ -460,6 +460,9 @@
                         <!-- 登録済みプロバイダリスト -->
                         <div class="settings-row p-6">
                             <h4 class="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                                <i class="fas fa-list-ul mr-2 text-indigo-500"></i>
+                                登録済みプロバイダ
+                            </h4>
                             <ul id="llm-provider-list" class="space-y-2 mb-6">
                                 <!-- LLMプロバイダはJavaScriptでここに動的に追加されます -->
                                 <li class="text-gray-400 dark:text-gray-500 text-xs text-center py-4 italic">
@@ -469,8 +472,8 @@
 
                             <div
                                 class="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <p class="text-sm text-gray-400 dark:text-gray-500">APIキーは暗号化して保存されます</p>
-                                <button id="delete-api-key-button" class="btn btn-danger btn-sm">
+                                <p class="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">APIキーは暗号化して保存されます</p>
+                                <button id="delete-api-key-button" class="btn btn-danger btn-sm whitespace-nowrap">
                                     <i class="fas fa-trash-alt mr-1"></i>全APIキーを削除
                                 </button>
                             </div>
