@@ -381,7 +381,7 @@ export class GlossaryManager {
                     if (this.glossaryOriginalAltInput) this.glossaryOriginalAltInput.value = Array.isArray(termToEdit.originalAlt) ? termToEdit.originalAlt.join('\n') : '';
                     if (this.glossaryTranslationInput) this.glossaryTranslationInput.value = termToEdit.translation;
                     if (this.glossaryNoteInput) this.glossaryNoteInput.value = termToEdit.note || '';
-                    if (this.addGlossaryTermButton) this.addGlossaryTermButton.textContent = '変更を保存';
+                    if (this.addGlossaryTermButton) this.addGlossaryTermButton.textContent = '用語を上書き保存';
                     if (this.cancelGlossaryEditButton) this.cancelGlossaryEditButton.classList.remove('hidden');
                     this.alertMessage(`用語「${termToEdit.original}」を編集モードにしました。`, 'info');
                 }

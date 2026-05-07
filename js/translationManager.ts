@@ -6,7 +6,6 @@
 import { callLLMService } from './llmService';
 import { alertMessage } from './uiUtils';
 import { settingsManager } from './settingsManager';
-import { tableFilter } from './tableFilter';
 import { GlossaryTerm, CustomToneCondition } from './types';
 import { StructureParser } from './core/StructureParser';
 import { TranslationMasker } from './core/TranslationMasker';
@@ -74,14 +73,17 @@ export interface TranslationManagerOptions {
 export class TranslationManager {
     private translationLog: TranslationLogEntry[] = [];
     private globalToneSelect: HTMLSelectElement | null = null;
+    private tableFilter: TableFilter | null = null;
     
     private getCurrentFileNameFn: (() => string) | null = null;
 
     public initialize({
         globalToneSelect,
+        tableFilter,
         getCurrentFileName
     }: TranslationManagerOptions): void {
         this.globalToneSelect = globalToneSelect;
+        this.tableFilter = tableFilter;
         
         this.getCurrentFileNameFn = getCurrentFileName;
     }
@@ -426,11 +428,14 @@ ${tokenRule}
         const allRows = Array.from(document.querySelectorAll('tbody tr'));
         const otherRows = allRows.filter(r => r !== rowElement && r.getAttribute('data-hash') === hash) as HTMLElement[];
         
-        if (otherRows.length > 0) {
+        if (otherRows.length > 1) {
             if (confirm(`同じテキスト構造を持つ他の ${otherRows.length} 行にもこの翻訳結果を適用しますか？\n（変数や装飾は各行に合わせて自動的に調整されます）`)) {
                 this.applyTemplateToGroup(otherRows, result.maskedTranslatedText, result.tokenizedSentence.replacements);
                 alertMessage(`${otherRows.length} 行に翻訳結果を適用しました。`, 'success');
             }
+        } else if (otherRows.length === 1) {
+            this.applyTemplateToGroup(otherRows, result.maskedTranslatedText, result.tokenizedSentence.replacements);
+            alertMessage(`他の 1 行にも翻訳結果を自動適用しました。`, 'success');
         }
     }
 
@@ -467,6 +472,13 @@ ${tokenRule}
         const applyBtn = document.getElementById('apply-manual-edit-to-group-button') as HTMLButtonElement;
         const cancelBtn = document.getElementById('cancel-manual-edit-group-button');
 
+        if (otherRows.length === 1) {
+            this.applyTemplateToGroup(otherRows, reverseResult.maskedText, maskData.sentence.replacements);
+            alertMessage(`他の 1 行にも変更を自動適用しました。`, 'success');
+            return;
+        }
+
+        // 2行以上の場合はモーダルを表示（または confirm）
         if (!modal || !repTextElem || !missingContainer || !missingList || !applyBtn || !cancelBtn) {
             // モーダルがない場合のフォールバック（従来のconfirm）
             if (confirm(`同じ構造を持つ他の ${otherRows.length} 行にもこの変更を適用しますか？`)) {
@@ -614,8 +626,8 @@ ${tokenRule}
             }
         });
 
-        if (tableFilter && tableFilter.applyFilters) {
-            tableFilter.applyFilters();
+        if (this.tableFilter && this.tableFilter.applyFilters) {
+            this.tableFilter.applyFilters();
         }
     }
 
@@ -681,7 +693,7 @@ ${tokenRule}
                 this.checkAndApplyToGroup(rowElement, translationResult);
             }
 
-            if (tableFilter && tableFilter.applyFilters) tableFilter.applyFilters();
+            if (this.tableFilter && this.tableFilter.applyFilters) this.tableFilter.applyFilters();
         }
 
         return translationResult;

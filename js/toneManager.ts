@@ -326,16 +326,7 @@ export class ToneManager {
             const value = name.replace(/\s+/g, '_').toLowerCase();
 
             if (this.editingToneIndex == null) {
-                const isDuplicate = this.customTones.some((tone, idx) =>
-                    idx == this.editingToneIndex && tone.value === value
-                );
-                if (isDuplicate) {
-                    this.alertMessage('その口調名は既に存在します。別の名前を使用してください。', 'warning');
-                    return;
-                }
-                this.customTones[this.editingToneIndex!] = { value, name, instruction, isConditional, conditions, elseInstruction };
-                this.alertMessage('口調を更新しました。', 'success');
-            } else {
+                // 新規追加モード
                 const isDuplicate = this.customTones.some(t => t.value === value);
                 if (isDuplicate) {
                     this.alertMessage('その口調名は既に存在します。別の名前を使用してください。', 'warning');
@@ -343,6 +334,17 @@ export class ToneManager {
                 }
                 this.customTones.push({ value, name, instruction, isConditional, conditions, elseInstruction });
                 this.alertMessage('新しい口調を追加しました。', 'success');
+            } else {
+                // 編集モード
+                const isDuplicate = this.customTones.some((tone, idx) =>
+                    idx !== this.editingToneIndex && tone.value === value
+                );
+                if (isDuplicate) {
+                    this.alertMessage('その口調名は既に存在します。別の名前を使用してください。', 'warning');
+                    return;
+                }
+                this.customTones[this.editingToneIndex] = { value, name, instruction, isConditional, conditions, elseInstruction };
+                this.alertMessage('口調を更新しました。', 'success');
             }
 
             this.saveSettingsCallback();
@@ -395,7 +397,7 @@ export class ToneManager {
                         if (this.newToneInstructionTextarea) this.newToneInstructionTextarea.value = toneToEdit.instruction || '';
                     }
 
-                    if (this.addCustomToneButton) this.addCustomToneButton.textContent = '変更を保存';
+                    if (this.addCustomToneButton) this.addCustomToneButton.textContent = '口調を上書き保存';
                     if (this.cancelEditButton) this.cancelEditButton.classList.remove('hidden');
                     this.alertMessage(`「${toneToEdit.name}」を編集モードにしました。`, 'info');
                 }

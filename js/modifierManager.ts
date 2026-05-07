@@ -199,7 +199,7 @@ export class ModifierManager {
         if (this.modifierCategoryInput) this.modifierCategoryInput.value = modifier.category;
         
         this.editingIndex = index;
-        if (this.addModifierButton) this.addModifierButton.textContent = '更新';
+        if (this.addModifierButton) this.addModifierButton.textContent = '設定を上書き保存';
         if (this.cancelModifierEditButton) this.cancelModifierEditButton.classList.remove('hidden');
 
         if (this.modifierNameInput) {

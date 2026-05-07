@@ -655,7 +655,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (row.style.display === 'none') return false;
             const translationCell = row.querySelector('.translation-cell');
             if (!translationCell) return false;
-            return forceAll || translationCell.textContent === '未翻訳';
+            const cellText = translationCell.textContent?.trim() || '';
+            return forceAll || cellText === '未翻訳' || cellText === '';
         });
 
         const hashGroups = new Map<string, HTMLTableRowElement[]>();
