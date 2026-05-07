@@ -1516,6 +1516,8 @@ textarea:focus {
 /* メインアクションボタンの調整 */
 #translate-all-button,
 .translate-button {
+    position: relative !important;
+    overflow: hidden !important;
     border-top-right-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
     display: flex !important;
@@ -1685,4 +1687,20 @@ textarea:focus {
 
 .dark .help-trigger:hover {
     color: #818cf8 !important;
+}
+
+/* 翻訳プログレスバー用アニメーション */
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes shine {
+    0% { transform: translateX(-200%); }
+    100% { transform: translateX(400%); }
+}
+
+@keyframes move-stripe {
+    from { background-position: 0 0; }
+    to { background-position: 1rem 0; }
 }

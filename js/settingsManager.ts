@@ -130,6 +130,7 @@ export class SettingsManager {
                 themeBlur: this.themeBlur,
                 llmProviders: this.LLM_PROVIDERS,
                 currentLlmProviderId: this.currentLlmProviderId,
+                currentLlmModelId: this.currentLlmModelId,
                 parallelCount: this.parallelCountInput ? parseInt(this.parallelCountInput.value, 10) : this.parallelCount,
             };
             this.parallelCount = settings.parallelCount;
@@ -431,6 +432,7 @@ export class SettingsManager {
                 }
 
                 this.currentLlmProviderId = settings.currentLlmProviderId || '';
+                this.currentLlmModelId = settings.currentLlmModelId || '';
 
                 if (this.customTones.length === 0) {
                     this.customTones.push({ value: 'da_dearu', name: 'だ・である調', instruction: '自称は「我ら」を使用し、語尾は「である」または「だ」調にしてください。', isConditional: false, conditions: [], elseInstruction: '' });
@@ -471,6 +473,7 @@ export class SettingsManager {
                 this.LLM_PROVIDERS = JSON.parse(JSON.stringify(DEFAULT_LLM_PROVIDERS_CONFIG));
 
                 this.currentLlmProviderId = '';
+                this.currentLlmModelId = '';
 
                 this.customTones.push({ value: 'da_dearu', name: 'だ・である調', instruction: '自称は「我ら」を使用し、語尾は「である」または「だ」調にしてください。', isConditional: false, conditions: [], elseInstruction: '' });
                 this.customTones.push({ value: 'taigen_dome', name: '体言止め', instruction: '自称は「我ら」を使用し、語尾は体言止めにしてください。', isConditional: false, conditions: [], elseInstruction: '' });

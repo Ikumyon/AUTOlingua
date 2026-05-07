@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const globalToneSelect = document.getElementById('tone-select') as HTMLSelectElement;
     const translatedFileDownloadSection = document.getElementById('translated-file-download-section') as HTMLElement;
     const translationProgress = document.getElementById('translation-progress') as HTMLElement;
+    const translationStatusText = document.getElementById('translation-status-text') as HTMLElement;
+    const translationCountText = document.getElementById('translation-count-text') as HTMLElement;
+    const translationProgressBarInner = document.getElementById('translation-progress-bar-inner') as HTMLElement;
+    const translationProgressPercentText = document.getElementById('translation-progress-percent-text') as HTMLElement;
 
     const settingsButton = document.getElementById('settings-button') as HTMLButtonElement;
     const settingsModal = document.getElementById('settings-modal') as HTMLElement;
@@ -529,15 +533,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (globalLlmProviderSelect) {
-        globalLlmProviderSelect.addEventListener('change', async (e: Event) => {
+        globalLlmProviderSelect.addEventListener('change', (e: Event) => {
             const v = (e.target as HTMLSelectElement).value || '';
             if (!v) {
                 settingsManager.updateCurrentLlmProviderId('');
+                settingsManager.updateCurrentLlmModelId('');
                 settingsManager.updateCurrentApiKey('');
-                return;
+            } else {
+                const [pId, mId] = v.split('::');
+                settingsManager.updateCurrentLlmProviderId(pId);
+                settingsManager.updateCurrentLlmModelId(mId);
             }
-            const [pId] = v.split('::');
-            settingsManager.updateCurrentLlmProviderId(pId);
+            settingsManager.saveOtherSettingsToLocalStorage();
         });
     }
 
@@ -638,6 +645,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         cancelTranslateAllButton.disabled = false;
         cancelTranslateAllButton.textContent = '翻訳停止';
         translationProgress.classList.remove('hidden');
+        if (translationProgressBarInner) translationProgressBarInner.style.width = '0%';
+        if (translationCountText) translationCountText.textContent = '0 / 0';
+        if (translationStatusText) translationStatusText.textContent = '翻訳準備中...';
+        if (translationProgressPercentText) translationProgressPercentText.textContent = '0% Complete';
         translateAllProgressBar.style.width = '0%';
         isTranslationCancelled = false;
 
@@ -670,6 +681,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         const actualTotal = hashGroups.size;
+        if (translationCountText) translationCountText.textContent = `0 / ${actualTotal}`;
+        if (translationStatusText) translationStatusText.textContent = '翻訳実行中...';
+
         if (actualTotal === 0) {
             finishTranslation();
             return;
@@ -711,6 +725,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     processedRows++;
                     const progress = (processedRows / actualTotal) * 100;
                     translateAllProgressBar.style.width = `${progress}%`;
+                    if (translationProgressBarInner) translationProgressBarInner.style.width = `${progress}%`;
+                    if (translationCountText) translationCountText.textContent = `${processedRows} / ${actualTotal}`;
+                    if (translationProgressPercentText) translationProgressPercentText.textContent = `${Math.round(progress)}% Complete`;
                 }
             })(representativeRow, otherRows).finally(() => {
                 activeTasks.delete(taskPromise);
@@ -1005,5 +1022,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // アバウト
     if (appLogo) appLogo.addEventListener('click', () => aboutModal.classList.remove('hidden'));
     if (closeAboutButton) closeAboutButton.addEventListener('click', () => aboutModal.classList.add('hidden'));
+
+    // ページを閉じる際の確認
+    window.addEventListener('beforeunload', (e) => {
+        const rows = document.querySelectorAll('#data-table-body tr');
+        if (rows.length > 0) {
+            e.preventDefault();
+            e.returnValue = ''; // ブラウザ標準の確認ダイアログを表示
+        }
+    });
 
 });

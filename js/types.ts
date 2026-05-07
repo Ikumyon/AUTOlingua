@@ -59,6 +59,7 @@ export interface AppSettings {
     themeBlur: number;
     llmProviders: LLMProvider[];
     currentLlmProviderId: string;
+    currentLlmModelId: string;
     parallelCount: number;
 }
 
