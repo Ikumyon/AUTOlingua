@@ -3,7 +3,7 @@
  * 汎用的なUI操作関数を提供するモジュール
  */
 
-import { LLMProvider, CustomTone } from './types';
+import { LLMProvider, CustomTone, GlossaryTerm } from './types';
 
 /**
  * カスタムアラートメッセージボックスを表示する関数 (現代化されたトースト通知)
@@ -203,6 +203,103 @@ export const isJapaneseText = (text: string): boolean => {
 };
 
 /**
+ * テキスト内の用語集対象語にハイライト（下線とホバー）を適用する
+ * @param text - エスケープ済みのテキスト（HTMLタグが含まれている可能性がある）
+ * @param terms - 用語集の配列
+ * @returns ハイライト適用済みのHTML文字列
+ */
+export const highlightGlossaryTerms = (text: string, terms: GlossaryTerm[]): string => {
+    if (!text || !terms || terms.length === 0) return text;
+    const targets = terms
+        .flatMap(term => {
+            const originals = [
+                term.original,
+                ...(Array.isArray(term.originalAlt) ? term.originalAlt : [])
+            ];
+            return originals
+                .map(target => ({ target: target.trim(), term }))
+                .filter(item => item.target !== '');
+        })
+        .sort((a, b) => b.target.length - a.target.length);
+
+    if (targets.length === 0) return text;
+
+    const container = document.createElement('div');
+    container.innerHTML = text;
+
+    const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = targets
+        .map(({ target }) => {
+            const startBoundary = /^\w/.test(target) ? '\\b' : '';
+            const endBoundary = /\w$/.test(target) ? '\\b' : '';
+            return `${startBoundary}${escapeRegex(target)}${endBoundary}`;
+        })
+        .join('|');
+    const regex = new RegExp(pattern, 'gi');
+
+    const textNodes: Text[] = [];
+    const collectTextNodes = (node: Node): void => {
+        node.childNodes.forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+                if (child.nodeValue) textNodes.push(child as Text);
+                return;
+            }
+
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                const element = child as HTMLElement;
+                if (element.classList.contains('glossary-highlight')) return;
+                collectTextNodes(child);
+            }
+        });
+    };
+
+    collectTextNodes(container);
+
+    textNodes.forEach(node => {
+        const originalText = node.nodeValue || '';
+        regex.lastIndex = 0;
+        if (!regex.test(originalText)) return;
+
+        regex.lastIndex = 0;
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(originalText)) !== null) {
+            const matchedText = match[0];
+            if (match.index > lastIndex) {
+                fragment.appendChild(document.createTextNode(originalText.slice(lastIndex, match.index)));
+            }
+
+            const targetInfo = targets.find(item => item.target.toLowerCase() === matchedText.toLowerCase());
+            if (targetInfo) {
+                const span = document.createElement('span');
+                span.className = 'glossary-highlight';
+                span.setAttribute(
+                    'data-tooltip',
+                    `訳語: ${targetInfo.term.translation}${targetInfo.term.note ? ' / ' + targetInfo.term.note : ''}`
+                );
+                span.textContent = matchedText;
+                fragment.appendChild(span);
+            } else {
+                fragment.appendChild(document.createTextNode(matchedText));
+            }
+
+            lastIndex = regex.lastIndex;
+            if (matchedText.length === 0) regex.lastIndex++;
+        }
+
+        if (lastIndex < originalText.length) {
+            fragment.appendChild(document.createTextNode(originalText.slice(lastIndex)));
+        }
+
+        node.parentNode?.replaceChild(fragment, node);
+    });
+
+    return container.innerHTML;
+};
+
+/**
  * パスワード入力フィールドの表示/非表示を切り替える機能を設定する関数
  * @param inputElement - パスワード入力要素
  * @param toggleButton - 切り替えボタン要素
@@ -356,4 +453,3 @@ export const initTableResizer = (table: HTMLTableElement): void => {
 
     table.querySelectorAll('.resizer').forEach(r => setupResizer(r as HTMLElement));
 };
-

@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveSettingsCallback: () => {
             syncStateToSettingsManager();
             settingsManager.saveOtherSettingsToLocalStorage();
+            fileProcessor.refreshOriginalTextHighlights();
         }
     });
 
@@ -1013,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 glossaryManager.setGlossaryTerms([]);
                 syncStateToSettingsManager();
                 settingsManager.saveOtherSettingsToLocalStorage();
+                fileProcessor.refreshOriginalTextHighlights();
                 alertMessage('すべての用語を削除しました。', 'success');
                 glossaryManager.resetGlossaryForm();
             }

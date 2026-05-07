@@ -4,7 +4,8 @@ import {
     hideErrorMessage,
     isJapaneseText,
     alertMessage,
-    initTableResizer
+    initTableResizer,
+    highlightGlossaryTerms
 } from './uiUtils';
 import { settingsManager } from './settingsManager';
 import { TableFilter } from './tableFilter';
@@ -78,6 +79,14 @@ export class FileProcessor {
 
     public getCurrentFileName(): string {
         return this.currentFileName;
+    }
+
+    private createOriginalTextCellHtml(originalText: string): string {
+        const valueWithBr = escapeHTML(originalText)
+            .replace(/\\n/g, '<br>')
+            .replace(/\r?\n/g, '<br>');
+        const highlightedOriginal = highlightGlossaryTerms(valueWithBr, settingsManager.glossaryTerms);
+        return `<td class="original-text-cell" data-original-html="${escapeHTML(valueWithBr)}">${highlightedOriginal}</td>`;
     }
 
     public async processFileContent(content: string): Promise<void> {
@@ -200,7 +209,6 @@ export class FileProcessor {
                     console.error("カラーコード正規表現のテスト中にエラーが発生しました:", e);
                 }
 
-                const valueWithBr = escapeHTML(value).replace(/\\n/g, '<br>');
                 const structure = StructureParser.parse(value, settingsManager.modifierCharacters);
                 const groupKey = structure.groupKey;
 
@@ -211,7 +219,7 @@ export class FileProcessor {
                 html += `<tr data-key="${escapeHTML(key)}" data-version="${escapeHTML(version)}" data-stage="0" data-hash="${escapeHTML(groupKey)}">`;
                 html += `<td class="delete-column-cell"><button class="delete-row-button btn-icon btn-sm danger"><i class="fas fa-trash-alt"></i></button></td>`;
                 html += `<td class="string_key-column-header">${escapeHTML(key)}</td>`;
-                html += `<td class="original-text-cell">${valueWithBr}</td>`;
+                html += this.createOriginalTextCellHtml(value);
                 html += `<td class="translation-cell" contenteditable="true" placeholder="未翻訳" title="クリックして編集"></td>`;
                 html += `<td class="review-column-cell">${stageControlHtml}</td>`;
                 html += `<td class="tone-column-cell">
@@ -280,6 +288,24 @@ export class FileProcessor {
         settingsManager.updateReviewColumnVisibility();
         this.updateTranslationButtonsState();
         if (this.tableFilter) this.tableFilter.updateAllTableRows();
+    }
+
+    public refreshOriginalTextHighlights(): void {
+        if (!this.dataTable) return;
+        const rows = this.dataTable.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const cell = row.querySelector('.original-text-cell') as HTMLElement;
+            if (cell) {
+                let originalHtml = cell.getAttribute('data-original-html') || '';
+                if (!originalHtml) {
+                    originalHtml = escapeHTML(cell.innerText)
+                        .replace(/\\n/g, '<br>')
+                        .replace(/\r?\n/g, '<br>');
+                    cell.setAttribute('data-original-html', originalHtml);
+                }
+                cell.innerHTML = highlightGlossaryTerms(originalHtml, settingsManager.glossaryTerms);
+            }
+        });
     }
 
     public readFile(file: File): void {
@@ -546,7 +572,6 @@ export class FileProcessor {
 
             let html = '';
             progressData.data.forEach(entry => {
-                const valueWithBr = escapeHTML(entry.original).replace(/\\n/g, '<br>');
                 const structure = StructureParser.parse(entry.original, settingsManager.modifierCharacters);
                 const groupKey = structure.groupKey;
                 const stageControlHtml = stageManager.createStageControlHtml(entry.stage);
@@ -554,7 +579,7 @@ export class FileProcessor {
                 html += `<tr data-key="${escapeHTML(entry.key)}" data-version="${escapeHTML(entry.version || '')}" data-stage="${entry.stage}" data-hash="${escapeHTML(groupKey)}">`;
                 html += `<td class="delete-column-cell"><button class="delete-row-button btn-icon btn-sm danger"><i class="fas fa-trash-alt"></i></button></td>`;
                 html += `<td class="string_key-column-header">${escapeHTML(entry.key)}</td>`;
-                html += `<td class="original-text-cell">${valueWithBr}</td>`;
+                html += this.createOriginalTextCellHtml(entry.original);
                 
                 let translationDisplay = entry.translation;
                 if (translationDisplay === '未翻訳' || !translationDisplay) {
@@ -629,7 +654,6 @@ export class FileProcessor {
             let html = '';
             entries.forEach(entry => {
                 const original = entry.original || '';
-                const valueWithBr = escapeHTML(original).replace(/\\n/g, '<br>');
                 const structure = StructureParser.parse(original, settingsManager.modifierCharacters);
                 const groupKey = structure.groupKey;
                 
@@ -644,7 +668,7 @@ export class FileProcessor {
                 html += `<tr data-key="${escapeHTML(entry.key)}" data-version="" data-stage="${autolinguaStage}" data-hash="${escapeHTML(groupKey)}">`;
                 html += `<td class="delete-column-cell"><button class="delete-row-button btn-icon btn-sm danger"><i class="fas fa-trash-alt"></i></button></td>`;
                 html += `<td class="string_key-column-header">${escapeHTML(entry.key)}</td>`;
-                html += `<td class="original-text-cell">${valueWithBr}</td>`;
+                html += this.createOriginalTextCellHtml(original);
                 
                 let translationDisplay = entry.translation || '';
                 if (translationDisplay === '未翻訳') {
